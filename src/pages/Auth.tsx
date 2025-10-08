@@ -31,6 +31,12 @@ const Auth = () => {
       return;
     }
 
+    // Validate email domain
+    if (!email.endsWith("@sorsu.edu.ph")) {
+      toast.error("Only @sorsu.edu.ph email addresses are allowed");
+      return;
+    }
+
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -50,6 +56,12 @@ const Auth = () => {
     e.preventDefault();
     if (!email || !password || !fullName) {
       toast.error("Please fill in all fields");
+      return;
+    }
+
+    // Validate email domain
+    if (!email.endsWith("@sorsu.edu.ph")) {
+      toast.error("Only @sorsu.edu.ph email addresses are allowed");
       return;
     }
 
@@ -98,7 +110,7 @@ const Auth = () => {
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="officer@example.com"
+                    placeholder="officer@sorsu.edu.ph"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
@@ -139,7 +151,7 @@ const Auth = () => {
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="officer@example.com"
+                    placeholder="officer@sorsu.edu.ph"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}

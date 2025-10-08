@@ -31,20 +31,20 @@ const AppSidebar = () => {
   const collapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarContent>
-        <div className="flex items-center gap-2 p-4 border-b">
+    <Sidebar collapsible="icon" className="bg-[hsl(var(--maroon))] border-r-0">
+      <SidebarContent className="bg-[hsl(var(--maroon))]">
+        <div className="flex items-center gap-2 p-4 border-b border-white/20">
           <img src={logo} alt="Computing Society" className="h-8 w-8 object-contain" />
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-sm">Computing Society</span>
-              <span className="text-xs text-muted-foreground">Attendance System</span>
+              <span className="font-bold text-sm text-white">Computing Society</span>
+              <span className="text-xs text-white/80">Attendance System</span>
             </div>
           )}
         </div>
         
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-white/90">Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -54,7 +54,9 @@ const AppSidebar = () => {
                       to={item.url}
                       end={item.url === "/dashboard"}
                       className={({ isActive }) =>
-                        isActive ? "bg-primary text-primary-foreground font-medium" : ""
+                        isActive 
+                          ? "bg-white/20 text-white font-medium hover:bg-white/25" 
+                          : "text-white/90 hover:bg-white/10 hover:text-white"
                       }
                     >
                       <item.icon className="h-4 w-4" />
@@ -67,10 +69,10 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="mt-auto p-4 border-t">
+        <div className="mt-auto p-4 border-t border-white/20">
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className="w-full justify-start text-white hover:bg-white/10 hover:text-white"
             onClick={signOut}
           >
             <LogOut className="h-4 w-4 mr-2" />
