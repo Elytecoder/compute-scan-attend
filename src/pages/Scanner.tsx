@@ -22,6 +22,24 @@ const Scanner = () => {
   }, []);
 
   useEffect(() => {
+    if (scanning && !scanner) {
+      // Wait for DOM to update before initializing scanner
+      const timer = setTimeout(() => {
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+          "reader",
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          false
+        );
+
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        setScanner(html5QrcodeScanner);
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [scanning, scanner]);
+
+  useEffect(() => {
     return () => {
       if (scanner) {
         scanner.clear();
@@ -47,15 +65,6 @@ const Scanner = () => {
       toast.error("Please select an event first");
       return;
     }
-
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      false
-    );
-
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-    setScanner(html5QrcodeScanner);
     setScanning(true);
   };
 
