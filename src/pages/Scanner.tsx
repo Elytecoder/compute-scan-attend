@@ -11,6 +11,7 @@ const Scanner = () => {
   const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
   const [scanning, setScanning] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<string>("");
+  const [selectedSession, setSelectedSession] = useState<"morning" | "afternoon">("morning");
   const [events, setEvents] = useState<any[]>([]);
   const [lastScan, setLastScan] = useState<{
     success: boolean;
@@ -65,6 +66,10 @@ const Scanner = () => {
       toast.error("Please select an event first");
       return;
     }
+    if (!selectedSession) {
+      toast.error("Please select a session first");
+      return;
+    }
     setScanning(true);
   };
 
@@ -95,14 +100,15 @@ const Scanner = () => {
       return;
     }
 
-    // Check if already checked in
+    // Check if already checked in for this session
     const { data: existingAttendance } = await supabase
       .from("attendance")
       .select("*")
       .eq("event_id", selectedEvent)
       .eq("member_id", member.id)
+      .eq("session", selectedSession)
       .is("time_out", null)
-      .single();
+      .maybeSingle();
 
     if (existingAttendance) {
       // Time out
@@ -118,16 +124,36 @@ const Scanner = () => {
 
       setLastScan({
         success: true,
-        message: `${member.name} - TIMED OUT`,
+        message: `${member.name} - TIMED OUT (${selectedSession.toUpperCase()})`,
       });
-      toast.success(`${member.name} timed out successfully`);
+      toast.success(`${member.name} timed out successfully for ${selectedSession}`);
     } else {
+      // Check if already completed this session
+      const { data: completedAttendance } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("event_id", selectedEvent)
+        .eq("member_id", member.id)
+        .eq("session", selectedSession)
+        .not("time_out", "is", null)
+        .maybeSingle();
+
+      if (completedAttendance) {
+        setLastScan({
+          success: false,
+          message: `${member.name} - Already completed ${selectedSession} session`,
+        });
+        toast.error(`${member.name} has already completed the ${selectedSession} session`);
+        return;
+      }
+
       // Time in
       const { error: insertError } = await supabase
         .from("attendance")
         .insert({
           event_id: selectedEvent,
           member_id: member.id,
+          session: selectedSession,
           time_in: new Date().toISOString(),
         });
 
@@ -138,9 +164,9 @@ const Scanner = () => {
 
       setLastScan({
         success: true,
-        message: `${member.name} - TIMED IN\n${member.program} ${member.block}`,
+        message: `${member.name} - TIMED IN (${selectedSession.toUpperCase()})\n${member.program} ${member.block}`,
       });
-      toast.success(`${member.name} checked in successfully`);
+      toast.success(`${member.name} checked in successfully for ${selectedSession}`);
     }
   };
 
@@ -157,25 +183,41 @@ const Scanner = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Select Event</CardTitle>
-          <CardDescription>Choose the event to record attendance for</CardDescription>
+          <CardTitle>Select Event & Session</CardTitle>
+          <CardDescription>Choose the event and session to record attendance for</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select value={selectedEvent} onValueChange={setSelectedEvent} disabled={scanning}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select an event" />
-            </SelectTrigger>
-            <SelectContent>
-              {events.map((event) => (
-                <SelectItem key={event.id} value={event.id}>
-                  {event.name} - {new Date(event.event_date).toLocaleDateString()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Event</label>
+            <Select value={selectedEvent} onValueChange={setSelectedEvent} disabled={scanning}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an event" />
+              </SelectTrigger>
+              <SelectContent>
+                {events.map((event) => (
+                  <SelectItem key={event.id} value={event.id}>
+                    {event.name} - {new Date(event.event_date).toLocaleDateString()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Session</label>
+            <Select value={selectedSession} onValueChange={(value: "morning" | "afternoon") => setSelectedSession(value)} disabled={scanning}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a session" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="morning">Morning</SelectItem>
+                <SelectItem value="afternoon">Afternoon</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {!scanning ? (
-            <Button onClick={startScanning} className="w-full" disabled={!selectedEvent}>
+            <Button onClick={startScanning} className="w-full" disabled={!selectedEvent || !selectedSession}>
               Start Scanning
             </Button>
           ) : (

@@ -20,6 +20,7 @@ export type Database = {
           event_id: string | null
           id: string
           member_id: string | null
+          session: Database["public"]["Enums"]["session_type"]
           time_in: string
           time_out: string | null
         }
@@ -28,6 +29,7 @@ export type Database = {
           event_id?: string | null
           id?: string
           member_id?: string | null
+          session?: Database["public"]["Enums"]["session_type"]
           time_in?: string
           time_out?: string | null
         }
@@ -36,6 +38,7 @@ export type Database = {
           event_id?: string | null
           id?: string
           member_id?: string | null
+          session?: Database["public"]["Enums"]["session_type"]
           time_in?: string
           time_out?: string | null
         }
@@ -167,6 +170,7 @@ export type Database = {
     }
     Enums: {
       program_type: "BSIT" | "BSCS" | "ACT"
+      session_type: "morning" | "afternoon"
       user_role: "admin" | "officer"
     }
     CompositeTypes: {
@@ -296,6 +300,7 @@ export const Constants = {
   public: {
     Enums: {
       program_type: ["BSIT", "BSCS", "ACT"],
+      session_type: ["morning", "afternoon"],
       user_role: ["admin", "officer"],
     },
   },
