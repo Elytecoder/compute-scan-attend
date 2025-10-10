@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -19,6 +20,8 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [selectedProgram, setSelectedProgram] = useState<string>("all");
   const [selectedBlock, setSelectedBlock] = useState<string>("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [attendanceToDelete, setAttendanceToDelete] = useState<any>(null);
 
   useEffect(() => {
     fetchEvents();
@@ -134,6 +137,31 @@ const Reports = () => {
     });
   }, [attendanceData, selectedProgram, selectedBlock]);
 
+  const handleDeleteAttendance = async () => {
+    if (!attendanceToDelete) return;
+
+    const { error } = await supabase
+      .from("attendance")
+      .delete()
+      .eq("id", attendanceToDelete.id);
+
+    if (error) {
+      toast.error("Failed to delete attendance record");
+    } else {
+      toast.success("Attendance record deleted successfully");
+      setDeleteDialogOpen(false);
+      setAttendanceToDelete(null);
+      if (selectedEvent) {
+        fetchAttendanceData();
+      }
+    }
+  };
+
+  const openDeleteDialog = (attendance: any) => {
+    setAttendanceToDelete(attendance);
+    setDeleteDialogOpen(true);
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF();
     const selectedEventData = events.find(e => e.id === selectedEvent);
@@ -159,6 +187,7 @@ const Reports = () => {
       record.member.name,
       record.member.program,
       record.member.block,
+      record.session,
       formatTime(record.time_in),
       formatTime(record.time_out),
       calculateDuration(record.time_in, record.time_out)
@@ -166,7 +195,7 @@ const Reports = () => {
     
     // Add table
     autoTable(doc, {
-      head: [['School ID', 'Name', 'Program', 'Block', 'Time In', 'Time Out', 'Duration']],
+      head: [['School ID', 'Name', 'Program', 'Block', 'Session', 'Time In', 'Time Out', 'Duration']],
       body: tableData,
       startY: selectedProgram !== "all" && selectedBlock !== "all" ? 45 : selectedProgram !== "all" || selectedBlock !== "all" ? 40 : 35,
       styles: { fontSize: 8 },
@@ -318,9 +347,11 @@ const Reports = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Program</TableHead>
                       <TableHead>Block</TableHead>
+                      <TableHead>Session</TableHead>
                       <TableHead>Time In</TableHead>
                       <TableHead>Time Out</TableHead>
                       <TableHead>Duration</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -332,10 +363,20 @@ const Reports = () => {
                         <TableCell>{record.member.name}</TableCell>
                         <TableCell>{record.member.program}</TableCell>
                         <TableCell>{record.member.block}</TableCell>
+                        <TableCell className="capitalize">{record.session}</TableCell>
                         <TableCell>{formatTime(record.time_in)}</TableCell>
                         <TableCell>{formatTime(record.time_out)}</TableCell>
                         <TableCell>
                           {calculateDuration(record.time_in, record.time_out)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openDeleteDialog(record)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -346,6 +387,21 @@ const Reports = () => {
           </Card>
         </>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Attendance Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this attendance record for {attendanceToDelete?.member?.name}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAttendance}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

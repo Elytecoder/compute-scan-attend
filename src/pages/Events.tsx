@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Events = () => {
@@ -16,6 +17,9 @@ const Events = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -49,20 +53,82 @@ const Events = () => {
       return;
     }
 
-    const { error } = await supabase.from("events").insert({
-      name: formData.name,
-      description: formData.description,
-      event_date: formData.event_date,
-      created_by: user?.id,
+    if (editingEvent) {
+      const { error } = await supabase
+        .from("events")
+        .update({
+          name: formData.name,
+          description: formData.description,
+          event_date: formData.event_date,
+        })
+        .eq("id", editingEvent.id);
+
+      if (error) {
+        toast.error("Failed to update event");
+      } else {
+        toast.success("Event updated successfully");
+        setDialogOpen(false);
+        setEditingEvent(null);
+        setFormData({ name: "", description: "", event_date: "" });
+        fetchEvents();
+      }
+    } else {
+      const { error } = await supabase.from("events").insert({
+        name: formData.name,
+        description: formData.description,
+        event_date: formData.event_date,
+        created_by: user?.id,
+      });
+
+      if (error) {
+        toast.error("Failed to create event");
+      } else {
+        toast.success("Event created successfully");
+        setDialogOpen(false);
+        setFormData({ name: "", description: "", event_date: "" });
+        fetchEvents();
+      }
+    }
+  };
+
+  const handleEdit = (event: any) => {
+    setEditingEvent(event);
+    setFormData({
+      name: event.name,
+      description: event.description || "",
+      event_date: event.event_date,
     });
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!eventToDelete) return;
+
+    const { error } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", eventToDelete.id);
 
     if (error) {
-      toast.error("Failed to create event");
+      toast.error("Failed to delete event");
     } else {
-      toast.success("Event created successfully");
-      setDialogOpen(false);
-      setFormData({ name: "", description: "", event_date: "" });
+      toast.success("Event deleted successfully");
+      setDeleteDialogOpen(false);
+      setEventToDelete(null);
       fetchEvents();
+    }
+  };
+
+  const openDeleteDialog = (event: any) => {
+    setEventToDelete(event);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingEvent(null);
+      setFormData({ name: "", description: "", event_date: "" });
     }
   };
 
@@ -73,7 +139,7 @@ const Events = () => {
           <h1 className="text-3xl font-bold">Events</h1>
           <p className="text-muted-foreground">Manage organization events</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -82,9 +148,9 @@ const Events = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Event</DialogTitle>
+              <DialogTitle>{editingEvent ? "Edit Event" : "Create New Event"}</DialogTitle>
               <DialogDescription>
-                Add a new event to track attendance
+                {editingEvent ? "Update event details" : "Add a new event to track attendance"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -116,7 +182,9 @@ const Events = () => {
                   onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
                 />
               </div>
-              <Button type="submit" className="w-full">Create Event</Button>
+              <Button type="submit" className="w-full">
+                {editingEvent ? "Update Event" : "Create Event"}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -142,6 +210,7 @@ const Events = () => {
                   <TableHead>Description</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -158,6 +227,24 @@ const Events = () => {
                     <TableCell className="text-muted-foreground">
                       {new Date(event.created_at).toLocaleDateString()}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(event)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteDialog(event)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -165,6 +252,21 @@ const Events = () => {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{eventToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

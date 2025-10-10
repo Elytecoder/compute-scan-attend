@@ -4,16 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, User } from "lucide-react";
+import { Plus, User, Pencil, Trash2 } from "lucide-react";
 
 const Members = () => {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<any>(null);
   const [formData, setFormData] = useState<{
     school_id: string;
     name: string;
@@ -53,24 +57,92 @@ const Members = () => {
       return;
     }
 
-    const { error } = await supabase.from("members").insert([{
-      school_id: formData.school_id,
-      name: formData.name,
-      program: formData.program as "BSIT" | "BSCS" | "ACT",
-      block: formData.block,
-    }]);
+    if (editingMember) {
+      const { error } = await supabase
+        .from("members")
+        .update({
+          school_id: formData.school_id,
+          name: formData.name,
+          program: formData.program as "BSIT" | "BSCS" | "ACT",
+          block: formData.block,
+        })
+        .eq("id", editingMember.id);
 
-    if (error) {
-      if (error.code === "23505") {
-        toast.error("A member with this school ID already exists");
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("A member with this school ID already exists");
+        } else {
+          toast.error("Failed to update member");
+        }
       } else {
-        toast.error("Failed to add member");
+        toast.success("Member updated successfully");
+        setDialogOpen(false);
+        setEditingMember(null);
+        setFormData({ school_id: "", name: "", program: "", block: "" });
+        fetchMembers();
       }
     } else {
-      toast.success("Member added successfully");
-      setDialogOpen(false);
-      setFormData({ school_id: "", name: "", program: "", block: "" });
+      const { error } = await supabase.from("members").insert([{
+        school_id: formData.school_id,
+        name: formData.name,
+        program: formData.program as "BSIT" | "BSCS" | "ACT",
+        block: formData.block,
+      }]);
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("A member with this school ID already exists");
+        } else {
+          toast.error("Failed to add member");
+        }
+      } else {
+        toast.success("Member added successfully");
+        setDialogOpen(false);
+        setFormData({ school_id: "", name: "", program: "", block: "" });
+        fetchMembers();
+      }
+    }
+  };
+
+  const handleEdit = (member: any) => {
+    setEditingMember(member);
+    setFormData({
+      school_id: member.school_id,
+      name: member.name,
+      program: member.program,
+      block: member.block,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!memberToDelete) return;
+
+    const { error } = await supabase
+      .from("members")
+      .delete()
+      .eq("id", memberToDelete.id);
+
+    if (error) {
+      toast.error("Failed to delete member");
+    } else {
+      toast.success("Member deleted successfully");
+      setDeleteDialogOpen(false);
+      setMemberToDelete(null);
       fetchMembers();
+    }
+  };
+
+  const openDeleteDialog = (member: any) => {
+    setMemberToDelete(member);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingMember(null);
+      setFormData({ school_id: "", name: "", program: "", block: "" });
     }
   };
 
@@ -81,7 +153,7 @@ const Members = () => {
           <h1 className="text-3xl font-bold">Members</h1>
           <p className="text-muted-foreground">Manage Computing Society members</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -90,9 +162,9 @@ const Members = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Member</DialogTitle>
+              <DialogTitle>{editingMember ? "Edit Member" : "Add New Member"}</DialogTitle>
               <DialogDescription>
-                Register a new Computing Society member
+                {editingMember ? "Update member details" : "Register a new Computing Society member"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -139,7 +211,9 @@ const Members = () => {
                   placeholder="e.g., 1A, 2B, 3C"
                 />
               </div>
-              <Button type="submit" className="w-full">Add Member</Button>
+              <Button type="submit" className="w-full">
+                {editingMember ? "Update Member" : "Add Member"}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -166,6 +240,7 @@ const Members = () => {
                   <TableHead>Program</TableHead>
                   <TableHead>Block</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -183,6 +258,24 @@ const Members = () => {
                     <TableCell className="text-muted-foreground">
                       {new Date(member.created_at).toLocaleDateString()}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(member)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteDialog(member)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -190,6 +283,21 @@ const Members = () => {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{memberToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
