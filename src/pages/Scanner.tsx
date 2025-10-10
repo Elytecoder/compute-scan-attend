@@ -12,6 +12,7 @@ const Scanner = () => {
   const [scanning, setScanning] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<string>("");
   const [selectedSession, setSelectedSession] = useState<"morning" | "afternoon">("morning");
+  const [actionType, setActionType] = useState<"time_in" | "time_out">("time_in");
   const [events, setEvents] = useState<any[]>([]);
   const [lastScan, setLastScan] = useState<{
     success: boolean;
@@ -70,6 +71,10 @@ const Scanner = () => {
       toast.error("Please select a session first");
       return;
     }
+    if (!actionType) {
+      toast.error("Please select an action type first");
+      return;
+    }
     setScanning(true);
   };
 
@@ -89,7 +94,7 @@ const Scanner = () => {
       .from("members")
       .select("*")
       .eq("school_id", schoolId)
-      .single();
+      .maybeSingle();
 
     if (memberError || !member) {
       setLastScan({
@@ -100,18 +105,74 @@ const Scanner = () => {
       return;
     }
 
-    // Check if already checked in for this session
-    const { data: existingAttendance } = await supabase
-      .from("attendance")
-      .select("*")
-      .eq("event_id", selectedEvent)
-      .eq("member_id", member.id)
-      .eq("session", selectedSession)
-      .is("time_out", null)
-      .maybeSingle();
+    if (actionType === "time_in") {
+      // Check if already has a time in for this session
+      const { data: existingTimeIn } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("event_id", selectedEvent)
+        .eq("member_id", member.id)
+        .eq("session", selectedSession)
+        .maybeSingle();
 
-    if (existingAttendance) {
-      // Time out
+      if (existingTimeIn) {
+        setLastScan({
+          success: false,
+          message: `${member.name} - Already has time in for ${selectedSession} session`,
+        });
+        toast.error(`${member.name} already has a time in record for the ${selectedSession} session`);
+        return;
+      }
+
+      // Record time in
+      const { error: insertError } = await supabase
+        .from("attendance")
+        .insert({
+          event_id: selectedEvent,
+          member_id: member.id,
+          session: selectedSession,
+          time_in: new Date().toISOString(),
+        });
+
+      if (insertError) {
+        toast.error("Failed to record time in");
+        return;
+      }
+
+      setLastScan({
+        success: true,
+        message: `${member.name} - TIMED IN (${selectedSession.toUpperCase()})\n${member.program} ${member.block}`,
+      });
+      toast.success(`${member.name} timed in successfully for ${selectedSession}`);
+    } else {
+      // Time out - find existing time in record without time out
+      const { data: existingAttendance } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("event_id", selectedEvent)
+        .eq("member_id", member.id)
+        .eq("session", selectedSession)
+        .maybeSingle();
+
+      if (!existingAttendance) {
+        setLastScan({
+          success: false,
+          message: `${member.name} - No time in record found for ${selectedSession} session`,
+        });
+        toast.error(`${member.name} has no time in record for the ${selectedSession} session`);
+        return;
+      }
+
+      if (existingAttendance.time_out) {
+        setLastScan({
+          success: false,
+          message: `${member.name} - Already timed out for ${selectedSession} session`,
+        });
+        toast.error(`${member.name} already has a time out record for the ${selectedSession} session`);
+        return;
+      }
+
+      // Record time out
       const { error: updateError } = await supabase
         .from("attendance")
         .update({ time_out: new Date().toISOString() })
@@ -127,46 +188,6 @@ const Scanner = () => {
         message: `${member.name} - TIMED OUT (${selectedSession.toUpperCase()})`,
       });
       toast.success(`${member.name} timed out successfully for ${selectedSession}`);
-    } else {
-      // Check if already completed this session
-      const { data: completedAttendance } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("event_id", selectedEvent)
-        .eq("member_id", member.id)
-        .eq("session", selectedSession)
-        .not("time_out", "is", null)
-        .maybeSingle();
-
-      if (completedAttendance) {
-        setLastScan({
-          success: false,
-          message: `${member.name} - Already completed ${selectedSession} session`,
-        });
-        toast.error(`${member.name} has already completed the ${selectedSession} session`);
-        return;
-      }
-
-      // Time in
-      const { error: insertError } = await supabase
-        .from("attendance")
-        .insert({
-          event_id: selectedEvent,
-          member_id: member.id,
-          session: selectedSession,
-          time_in: new Date().toISOString(),
-        });
-
-      if (insertError) {
-        toast.error("Failed to record attendance");
-        return;
-      }
-
-      setLastScan({
-        success: true,
-        message: `${member.name} - TIMED IN (${selectedSession.toUpperCase()})\n${member.program} ${member.block}`,
-      });
-      toast.success(`${member.name} checked in successfully for ${selectedSession}`);
     }
   };
 
@@ -183,8 +204,8 @@ const Scanner = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Select Event & Session</CardTitle>
-          <CardDescription>Choose the event and session to record attendance for</CardDescription>
+          <CardTitle>Select Event, Session & Action</CardTitle>
+          <CardDescription>Choose the event, session, and whether to record time in or time out</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -216,8 +237,21 @@ const Scanner = () => {
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Action Type</label>
+            <Select value={actionType} onValueChange={(value: "time_in" | "time_out") => setActionType(value)} disabled={scanning}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select action type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="time_in">Time In</SelectItem>
+                <SelectItem value="time_out">Time Out</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {!scanning ? (
-            <Button onClick={startScanning} className="w-full" disabled={!selectedEvent || !selectedSession}>
+            <Button onClick={startScanning} className="w-full" disabled={!selectedEvent || !selectedSession || !actionType}>
               Start Scanning
             </Button>
           ) : (
