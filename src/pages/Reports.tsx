@@ -1,10 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Download } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Reports = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -13,6 +17,8 @@ const Reports = () => {
   const [summaryByProgram, setSummaryByProgram] = useState<any[]>([]);
   const [summaryByBlock, setSummaryByBlock] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProgram, setSelectedProgram] = useState<string>("all");
+  const [selectedBlock, setSelectedBlock] = useState<string>("all");
 
   useEffect(() => {
     fetchEvents();
@@ -108,6 +114,71 @@ const Reports = () => {
     return `${hours}h ${minutes}m`;
   };
 
+  // Get unique programs and blocks
+  const uniquePrograms = useMemo(() => {
+    const programs = new Set(attendanceData.map(record => record.member.program));
+    return Array.from(programs).sort();
+  }, [attendanceData]);
+
+  const uniqueBlocks = useMemo(() => {
+    const blocks = new Set(attendanceData.map(record => record.member.block));
+    return Array.from(blocks).sort();
+  }, [attendanceData]);
+
+  // Filter attendance data based on selected program and block
+  const filteredAttendanceData = useMemo(() => {
+    return attendanceData.filter(record => {
+      const programMatch = selectedProgram === "all" || record.member.program === selectedProgram;
+      const blockMatch = selectedBlock === "all" || record.member.block === selectedBlock;
+      return programMatch && blockMatch;
+    });
+  }, [attendanceData, selectedProgram, selectedBlock]);
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const selectedEventData = events.find(e => e.id === selectedEvent);
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text("Attendance Report", 14, 15);
+    
+    // Add event details
+    doc.setFontSize(10);
+    doc.text(`Event: ${selectedEventData?.name || 'N/A'}`, 14, 25);
+    doc.text(`Date: ${selectedEventData ? new Date(selectedEventData.event_date).toLocaleDateString() : 'N/A'}`, 14, 30);
+    if (selectedProgram !== "all") {
+      doc.text(`Program: ${selectedProgram}`, 14, 35);
+    }
+    if (selectedBlock !== "all") {
+      doc.text(`Block: ${selectedBlock}`, 14, selectedProgram !== "all" ? 40 : 35);
+    }
+    
+    // Prepare table data
+    const tableData = filteredAttendanceData.map(record => [
+      record.member.school_id,
+      record.member.name,
+      record.member.program,
+      record.member.block,
+      formatTime(record.time_in),
+      formatTime(record.time_out),
+      calculateDuration(record.time_in, record.time_out)
+    ]);
+    
+    // Add table
+    autoTable(doc, {
+      head: [['School ID', 'Name', 'Program', 'Block', 'Time In', 'Time Out', 'Duration']],
+      body: tableData,
+      startY: selectedProgram !== "all" && selectedBlock !== "all" ? 45 : selectedProgram !== "all" || selectedBlock !== "all" ? 40 : 35,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [128, 0, 32] }
+    });
+    
+    // Save the PDF
+    const filename = `attendance_${selectedEventData?.name || 'report'}_${selectedProgram !== "all" ? selectedProgram + "_" : ""}${selectedBlock !== "all" ? selectedBlock + "_" : ""}${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
+    toast.success("Report exported successfully");
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -138,6 +209,49 @@ const Reports = () => {
 
       {!loading && selectedEvent && (
         <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Filter by Program and Block</CardTitle>
+              <CardDescription>Select specific program and/or block to view</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Program/Course</label>
+                  <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Programs" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Programs</SelectItem>
+                      {uniquePrograms.map((program) => (
+                        <SelectItem key={program} value={program}>
+                          {program}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Block</label>
+                  <Select value={selectedBlock} onValueChange={setSelectedBlock}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Blocks" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Blocks</SelectItem>
+                      {uniqueBlocks.map((block) => (
+                        <SelectItem key={block} value={block}>
+                          {block}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -176,15 +290,25 @@ const Reports = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Detailed Attendance</CardTitle>
-              <CardDescription>
-                {attendanceData.length} total attendees
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Detailed Attendance</CardTitle>
+                  <CardDescription>
+                    {filteredAttendanceData.length} attendees {selectedProgram !== "all" || selectedBlock !== "all" ? "(filtered)" : "(total)"}
+                  </CardDescription>
+                </div>
+                <Button onClick={exportToPDF} disabled={filteredAttendanceData.length === 0}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export to PDF
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {attendanceData.length === 0 ? (
+              {filteredAttendanceData.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No attendance records for this event yet.
+                  {attendanceData.length === 0 
+                    ? "No attendance records for this event yet."
+                    : "No attendance records match the selected filters."}
                 </div>
               ) : (
                 <Table>
@@ -200,7 +324,7 @@ const Reports = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {attendanceData.map((record) => (
+                    {filteredAttendanceData.map((record) => (
                       <TableRow key={record.id}>
                         <TableCell className="font-medium">
                           {record.member.school_id}
