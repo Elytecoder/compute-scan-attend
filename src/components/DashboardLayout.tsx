@@ -31,8 +31,8 @@ const AppSidebar = () => {
   const collapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="bg-[hsl(var(--maroon))] border-r-0">
-      <SidebarContent className="bg-[hsl(var(--maroon))]">
+    <Sidebar collapsible="icon" className="border-r-0">
+      <SidebarContent>
         <div className="flex items-center gap-2 p-4 border-b border-white/20">
           <img src={logo} alt="Computing Society" className="h-8 w-8 object-contain" />
           {!collapsed && (
