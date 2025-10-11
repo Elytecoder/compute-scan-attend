@@ -22,7 +22,7 @@ const memberSchema = z.object({
     .trim()
     .min(2, "Name must be at least 2 characters")
     .max(100, "Name is too long"),
-  program: z.enum(["BSIT", "BSCS", "ACT"], { errorMap: () => ({ message: "Please select a valid program" }) }),
+  program: z.enum(["BSCS", "BSIT", "BSIS", "BTVTED-CSS"], { errorMap: () => ({ message: "Please select a valid program" }) }),
   block: z.string()
     .trim()
     .regex(/^[0-9][A-Z]$/, "Block must be in format like 1A, 2B, 3C")
@@ -39,7 +39,7 @@ const Members = () => {
   const [formData, setFormData] = useState<{
     school_id: string;
     name: string;
-    program: "BSIT" | "BSCS" | "ACT" | "";
+    program: "BSCS" | "BSIT" | "BSIS" | "BTVTED-CSS" | "";
     block: string;
   }>({
     school_id: "",
@@ -211,15 +211,16 @@ const Members = () => {
                 <Label htmlFor="program">Program *</Label>
                 <Select
                   value={formData.program}
-                  onValueChange={(value) => setFormData({ ...formData, program: value as "BSIT" | "BSCS" | "ACT" })}
+                  onValueChange={(value) => setFormData({ ...formData, program: value as "BSCS" | "BSIT" | "BSIS" | "BTVTED-CSS" })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select program" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BSIT">BSIT</SelectItem>
                     <SelectItem value="BSCS">BSCS</SelectItem>
-                    <SelectItem value="ACT">ACT</SelectItem>
+                    <SelectItem value="BSIT">BSIT</SelectItem>
+                    <SelectItem value="BSIS">BSIS</SelectItem>
+                    <SelectItem value="BTVTED-CSS">BTVTED-CSS</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -169,7 +169,7 @@ export type Database = {
       }
     }
     Enums: {
-      program_type: "BSIT" | "BSCS" | "ACT"
+      program_type: "BSCS" | "BSIT" | "BSIS" | "BTVTED-CSS"
       session_type: "morning" | "afternoon"
       user_role: "admin" | "officer"
     }
@@ -299,7 +299,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      program_type: ["BSIT", "BSCS", "ACT"],
+      program_type: ["BSCS", "BSIT", "BSIS", "BTVTED-CSS"],
       session_type: ["morning", "afternoon"],
       user_role: ["admin", "officer"],
     },
