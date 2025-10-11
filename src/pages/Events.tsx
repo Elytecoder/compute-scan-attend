@@ -11,6 +11,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Calendar as CalendarIcon, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { z } from "zod";
+
+// Validation schema for events
+const eventSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(3, "Event name must be at least 3 characters")
+    .max(200, "Event name is too long"),
+  description: z.string()
+    .max(1000, "Description is too long")
+    .optional(),
+  event_date: z.string()
+    .min(1, "Event date is required"),
+});
 
 const Events = () => {
   const { user } = useAuth();
@@ -48,8 +62,11 @@ const Events = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.event_date) {
-      toast.error("Please fill in required fields");
+    // Validate inputs
+    const validation = eventSchema.safeParse(formData);
+    if (!validation.success) {
+      const errors = validation.error.errors.map(err => err.message).join(", ");
+      toast.error(errors);
       return;
     }
 
@@ -57,14 +74,14 @@ const Events = () => {
       const { error } = await supabase
         .from("events")
         .update({
-          name: formData.name,
-          description: formData.description,
-          event_date: formData.event_date,
+          name: validation.data.name,
+          description: validation.data.description,
+          event_date: validation.data.event_date,
         })
         .eq("id", editingEvent.id);
 
       if (error) {
-        toast.error("Failed to update event");
+        toast.error("Failed to update event. Please try again.");
       } else {
         toast.success("Event updated successfully");
         setDialogOpen(false);
@@ -74,14 +91,14 @@ const Events = () => {
       }
     } else {
       const { error } = await supabase.from("events").insert({
-        name: formData.name,
-        description: formData.description,
-        event_date: formData.event_date,
+        name: validation.data.name,
+        description: validation.data.description,
+        event_date: validation.data.event_date,
         created_by: user?.id,
       });
 
       if (error) {
-        toast.error("Failed to create event");
+        toast.error("Failed to create event. Please try again.");
       } else {
         toast.success("Event created successfully");
         setDialogOpen(false);
@@ -110,7 +127,7 @@ const Events = () => {
       .eq("id", eventToDelete.id);
 
     if (error) {
-      toast.error("Failed to delete event");
+      toast.error("Failed to delete event. Please try again.");
     } else {
       toast.success("Event deleted successfully");
       setDeleteDialogOpen(false);

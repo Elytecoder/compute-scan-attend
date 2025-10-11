@@ -6,6 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CheckCircle, XCircle } from "lucide-react";
+import { z } from "zod";
+
+// Validation schema for school ID
+const schoolIdSchema = z.string()
+  .trim()
+  .regex(/^\d{4}-\d{5}$/, "Invalid school ID format")
+  .max(20, "School ID is too long");
 
 const Scanner = () => {
   const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
@@ -87,7 +94,18 @@ const Scanner = () => {
   };
 
   const onScanSuccess = async (decodedText: string) => {
-    const schoolId = decodedText.trim();
+    // Validate and sanitize school ID
+    const validation = schoolIdSchema.safeParse(decodedText);
+    if (!validation.success) {
+      setLastScan({
+        success: false,
+        message: `Invalid QR code format: ${decodedText}`,
+      });
+      toast.error("Invalid QR code format. Please scan a valid membership card.");
+      return;
+    }
+    
+    const schoolId = validation.data;
     
     // Find member by school ID
     const { data: member, error: memberError } = await supabase
@@ -135,7 +153,7 @@ const Scanner = () => {
         });
 
       if (insertError) {
-        toast.error("Failed to record time in");
+        toast.error("Failed to record time in. Please try again.");
         return;
       }
 
@@ -179,7 +197,7 @@ const Scanner = () => {
         .eq("id", existingAttendance.id);
 
       if (updateError) {
-        toast.error("Failed to record time out");
+        toast.error("Failed to record time out. Please try again.");
         return;
       }
 

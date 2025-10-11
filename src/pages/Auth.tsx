@@ -8,6 +8,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import logo from "@/assets/computing-society-logo.jpg";
+import { z } from "zod";
+
+// Validation schemas
+const signInSchema = z.object({
+  email: z.string()
+    .trim()
+    .email("Invalid email format")
+    .endsWith("@sorsu.edu.ph", "Only @sorsu.edu.ph email addresses are allowed")
+    .max(255, "Email is too long"),
+  password: z.string()
+    .min(1, "Password is required")
+    .max(128, "Password is too long"),
+});
+
+const signUpSchema = z.object({
+  fullName: z.string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name is too long"),
+  email: z.string()
+    .trim()
+    .email("Invalid email format")
+    .endsWith("@sorsu.edu.ph", "Only @sorsu.edu.ph email addresses are allowed")
+    .max(255, "Email is too long"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(128, "Password is too long")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -26,25 +57,23 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    // Validate email domain
-    if (!email.endsWith("@sorsu.edu.ph")) {
-      toast.error("Only @sorsu.edu.ph email addresses are allowed");
+    
+    // Validate inputs
+    const validation = signInSchema.safeParse({ email, password });
+    if (!validation.success) {
+      const errors = validation.error.errors.map(err => err.message).join(", ");
+      toast.error(errors);
       return;
     }
 
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: validation.data.email,
+      password: validation.data.password,
     });
 
     if (error) {
-      toast.error(error.message);
+      toast.error("Invalid email or password");
     } else {
       toast.success("Signed in successfully");
       navigate("/dashboard");
@@ -54,31 +83,29 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !fullName) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    // Validate email domain
-    if (!email.endsWith("@sorsu.edu.ph")) {
-      toast.error("Only @sorsu.edu.ph email addresses are allowed");
+    
+    // Validate inputs
+    const validation = signUpSchema.safeParse({ fullName, email, password });
+    if (!validation.success) {
+      const errors = validation.error.errors.map(err => err.message).join(", ");
+      toast.error(errors);
       return;
     }
 
     setLoading(true);
     const { error } = await supabase.auth.signUp({
-      email,
-      password,
+      email: validation.data.email,
+      password: validation.data.password,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
         data: {
-          full_name: fullName,
+          full_name: validation.data.fullName,
         },
       },
     });
 
     if (error) {
-      toast.error(error.message);
+      toast.error("Failed to create account. Please try again.");
     } else {
       toast.success("Account created successfully! Signing you in...");
       navigate("/dashboard");
@@ -162,7 +189,7 @@ const Auth = () => {
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="Create a password (min. 6 characters)"
+                    placeholder="Create a password (min. 8 characters)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}

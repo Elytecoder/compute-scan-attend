@@ -10,6 +10,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, User, Pencil, Trash2 } from "lucide-react";
+import { z } from "zod";
+
+// Validation schema for members
+const memberSchema = z.object({
+  school_id: z.string()
+    .trim()
+    .regex(/^\d{4}-\d{5}$/, "School ID must be in format YYYY-NNNNN (e.g., 2021-12345)")
+    .max(20, "School ID is too long"),
+  name: z.string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name is too long"),
+  program: z.enum(["BSIT", "BSCS", "ACT"], { errorMap: () => ({ message: "Please select a valid program" }) }),
+  block: z.string()
+    .trim()
+    .regex(/^[0-9][A-Z]$/, "Block must be in format like 1A, 2B, 3C")
+    .max(10, "Block is too long"),
+});
 
 const Members = () => {
   const [members, setMembers] = useState<any[]>([]);
@@ -52,8 +70,11 @@ const Members = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.school_id || !formData.name || !formData.program || !formData.block) {
-      toast.error("Please fill in all fields");
+    // Validate inputs
+    const validation = memberSchema.safeParse(formData);
+    if (!validation.success) {
+      const errors = validation.error.errors.map(err => err.message).join(", ");
+      toast.error(errors);
       return;
     }
 
@@ -61,10 +82,10 @@ const Members = () => {
       const { error } = await supabase
         .from("members")
         .update({
-          school_id: formData.school_id,
-          name: formData.name,
-          program: formData.program as "BSIT" | "BSCS" | "ACT",
-          block: formData.block,
+          school_id: validation.data.school_id,
+          name: validation.data.name,
+          program: validation.data.program,
+          block: validation.data.block,
         })
         .eq("id", editingMember.id);
 
@@ -72,7 +93,7 @@ const Members = () => {
         if (error.code === "23505") {
           toast.error("A member with this school ID already exists");
         } else {
-          toast.error("Failed to update member");
+          toast.error("Failed to update member. Please try again.");
         }
       } else {
         toast.success("Member updated successfully");
@@ -83,17 +104,17 @@ const Members = () => {
       }
     } else {
       const { error } = await supabase.from("members").insert([{
-        school_id: formData.school_id,
-        name: formData.name,
-        program: formData.program as "BSIT" | "BSCS" | "ACT",
-        block: formData.block,
+        school_id: validation.data.school_id,
+        name: validation.data.name,
+        program: validation.data.program,
+        block: validation.data.block,
       }]);
 
       if (error) {
         if (error.code === "23505") {
           toast.error("A member with this school ID already exists");
         } else {
-          toast.error("Failed to add member");
+          toast.error("Failed to add member. Please try again.");
         }
       } else {
         toast.success("Member added successfully");
@@ -124,7 +145,7 @@ const Members = () => {
       .eq("id", memberToDelete.id);
 
     if (error) {
-      toast.error("Failed to delete member");
+      toast.error("Failed to delete member. Please try again.");
     } else {
       toast.success("Member deleted successfully");
       setDeleteDialogOpen(false);
