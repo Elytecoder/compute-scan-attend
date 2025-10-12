@@ -13,6 +13,7 @@ import Events from "./pages/Events";
 import Members from "./pages/Members";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
+import UploadMembers from "./pages/UploadMembers";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="scanner" element={<Scanner />} />
               <Route path="events" element={<Events />} />
               <Route path="members" element={<Members />} />
+              <Route path="upload-members" element={<UploadMembers />} />
               <Route path="reports" element={<Reports />} />
             </Route>
             <Route path="*" element={<NotFound />} />

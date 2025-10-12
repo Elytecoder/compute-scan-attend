@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, User, Pencil, Trash2 } from "lucide-react";
+import { Plus, User, Pencil, Trash2, Search } from "lucide-react";
 import { z } from "zod";
 
 // Validation schema for members
@@ -25,8 +25,10 @@ const memberSchema = z.object({
   program: z.enum(["BSCS", "BSIT", "BSIS", "BTVTED-CSS"], { errorMap: () => ({ message: "Please select a valid program" }) }),
   block: z.string()
     .trim()
-    .regex(/^[0-9][A-Z]$/, "Block must be in format like 1A, 2B, 3C")
-    .max(10, "Block is too long"),
+    .max(10, "Block is too long")
+    .refine((val) => val === "" || /^[0-9][A-Z]$/.test(val), {
+      message: "Block must be empty or in format like 1A, 2B, 3C"
+    }),
 });
 
 const Members = () => {
@@ -36,6 +38,8 @@ const Members = () => {
   const [editingMember, setEditingMember] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<any>(null);
+  const [searchSchoolId, setSearchSchoolId] = useState("");
+  const [searchName, setSearchName] = useState("");
   const [formData, setFormData] = useState<{
     school_id: string;
     name: string;
@@ -103,12 +107,14 @@ const Members = () => {
         fetchMembers();
       }
     } else {
-      const { error } = await supabase.from("members").insert([{
+      const memberData = {
         school_id: validation.data.school_id,
         name: validation.data.name,
         program: validation.data.program,
         block: validation.data.block,
-      }]);
+      };
+      
+      const { error } = await supabase.from("members").insert([memberData]);
 
       if (error) {
         if (error.code === "23505") {
@@ -166,6 +172,17 @@ const Members = () => {
       setFormData({ school_id: "", name: "", program: "", block: "" });
     }
   };
+
+  // Filter members based on search criteria
+  const filteredMembers = members.filter((member) => {
+    const matchesSchoolId = searchSchoolId
+      ? member.school_id.toLowerCase().includes(searchSchoolId.toLowerCase())
+      : true;
+    const matchesName = searchName
+      ? member.name.toLowerCase().includes(searchName.toLowerCase())
+      : true;
+    return matchesSchoolId && matchesName;
+  });
 
   return (
     <div className="space-y-6">
@@ -247,11 +264,37 @@ const Members = () => {
           <CardDescription>View all registered members</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex gap-4 mb-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by School ID..."
+                  value={searchSchoolId}
+                  onChange={(e) => setSearchSchoolId(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by Name..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </div>
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
-          ) : members.length === 0 ? (
+          ) : filteredMembers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No members yet. Add your first member to get started.
+              {members.length === 0 
+                ? "No members yet. Add your first member to get started."
+                : "No members found matching your search criteria."}
             </div>
           ) : (
             <Table>
@@ -266,7 +309,7 @@ const Members = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {members.map((member) => (
+                {filteredMembers.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">{member.school_id}</TableCell>
                     <TableCell>
