@@ -458,14 +458,26 @@ export const membersData = `25-197015	REXTER FURIO BAILON	BSCS
 
 export function parseMembersData() {
   const lines = membersData.split('\n').filter(line => line.trim());
+  const currentYear = 2025; // Current year for year level calculation
+  
   return lines.map(line => {
     const parts = line.split('\t');
+    const schoolId = parts[0].trim();
+    
+    // Extract enrollment year from school_id (first 2 characters)
+    const enrollmentYear = parseInt(schoolId.substring(0, 2));
+    const fullEnrollmentYear = 2000 + enrollmentYear;
+    
+    // Calculate year level: current year - enrollment year + 1, capped at 4th year
+    const calculatedYearLevel = currentYear - fullEnrollmentYear + 1;
+    const yearLevel = Math.min(4, Math.max(1, calculatedYearLevel));
+    
     return {
-      school_id: parts[0].trim(),
+      school_id: schoolId,
       name: parts[1].trim(),
       program: parts[2].trim() as "BSCS" | "BSIT" | "BSIS" | "BTVTED-CSS",
       block: "",
-      year_level: 1
+      year_level: yearLevel
     };
   });
 }
