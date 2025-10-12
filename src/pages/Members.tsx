@@ -24,6 +24,8 @@ const memberSchema = z.object({
   program: z.enum(["BSCS", "BSIT", "BSIS", "BTVTED-CSS"], { errorMap: () => ({ message: "Please select a valid program" }) }),
   block: z.string()
     .min(1, "Please select a block"),
+  year_level: z.string()
+    .min(1, "Please select a year level"),
 });
 
 const Members = () => {
@@ -40,11 +42,13 @@ const Members = () => {
     name: string;
     program: "BSCS" | "BSIT" | "BSIS" | "BTVTED-CSS" | "";
     block: string;
+    year_level: string;
   }>({
     school_id: "",
     name: "",
     program: "",
     block: "",
+    year_level: "",
   });
 
   useEffect(() => {
@@ -85,6 +89,7 @@ const Members = () => {
           name: validation.data.name,
           program: validation.data.program,
           block: validation.data.block,
+          year_level: parseInt(validation.data.year_level),
         })
         .eq("id", editingMember.id);
 
@@ -98,7 +103,7 @@ const Members = () => {
         toast.success("Member updated successfully");
         setDialogOpen(false);
         setEditingMember(null);
-        setFormData({ school_id: "", name: "", program: "", block: "" });
+        setFormData({ school_id: "", name: "", program: "", block: "", year_level: "" });
         fetchMembers();
       }
     } else {
@@ -107,6 +112,7 @@ const Members = () => {
         name: validation.data.name,
         program: validation.data.program,
         block: validation.data.block,
+        year_level: parseInt(validation.data.year_level),
       };
       
       const { error } = await supabase.from("members").insert([memberData]);
@@ -120,7 +126,7 @@ const Members = () => {
       } else {
         toast.success("Member added successfully");
         setDialogOpen(false);
-        setFormData({ school_id: "", name: "", program: "", block: "" });
+        setFormData({ school_id: "", name: "", program: "", block: "", year_level: "" });
         fetchMembers();
       }
     }
@@ -133,6 +139,7 @@ const Members = () => {
       name: member.name,
       program: member.program,
       block: member.block,
+      year_level: member.year_level?.toString() || "",
     });
     setDialogOpen(true);
   };
@@ -164,7 +171,7 @@ const Members = () => {
     setDialogOpen(open);
     if (!open) {
       setEditingMember(null);
-      setFormData({ school_id: "", name: "", program: "", block: "" });
+      setFormData({ school_id: "", name: "", program: "", block: "", year_level: "" });
     }
   };
 
@@ -254,6 +261,23 @@ const Members = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="year_level">Year Level *</Label>
+                <Select
+                  value={formData.year_level}
+                  onValueChange={(value) => setFormData({ ...formData, year_level: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select year level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1st Year</SelectItem>
+                    <SelectItem value="2">2nd Year</SelectItem>
+                    <SelectItem value="3">3rd Year</SelectItem>
+                    <SelectItem value="4">4th Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button type="submit" className="w-full">
                 {editingMember ? "Update Member" : "Add Member"}
               </Button>
@@ -307,6 +331,7 @@ const Members = () => {
                   <TableHead>School ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Program</TableHead>
+                  <TableHead>Year Level</TableHead>
                   <TableHead>Block</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -323,6 +348,7 @@ const Members = () => {
                       </div>
                     </TableCell>
                     <TableCell>{member.program}</TableCell>
+                    <TableCell>{member.year_level ? `${member.year_level}${member.year_level === 1 ? 'st' : member.year_level === 2 ? 'nd' : member.year_level === 3 ? 'rd' : 'th'} Year` : '-'}</TableCell>
                     <TableCell>{member.block}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(member.created_at).toLocaleDateString()}

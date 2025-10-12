@@ -464,7 +464,8 @@ export function parseMembersData() {
       school_id: parts[0].trim(),
       name: parts[1].trim(),
       program: parts[2].trim() as "BSCS" | "BSIT" | "BSIS" | "BTVTED-CSS",
-      block: ""
+      block: "",
+      year_level: 1
     };
   });
 }

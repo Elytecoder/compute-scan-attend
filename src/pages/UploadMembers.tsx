@@ -55,7 +55,7 @@ const UploadMembers = () => {
           <CardTitle>Upload Members Data</CardTitle>
           <CardDescription>
             This will upload {parseMembersData().length} members from the provided Excel file.
-            Blocks will be left empty for manual editing later.
+            Blocks will be left empty and year levels will default to 1st year for manual editing later.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

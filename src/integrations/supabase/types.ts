@@ -94,6 +94,7 @@ export type Database = {
           name: string
           program: Database["public"]["Enums"]["program_type"]
           school_id: string
+          year_level: number
         }
         Insert: {
           block: string
@@ -102,6 +103,7 @@ export type Database = {
           name: string
           program: Database["public"]["Enums"]["program_type"]
           school_id: string
+          year_level?: number
         }
         Update: {
           block?: string
@@ -110,6 +112,7 @@ export type Database = {
           name?: string
           program?: Database["public"]["Enums"]["program_type"]
           school_id?: string
+          year_level?: number
         }
         Relationships: []
       }
