@@ -16,19 +16,14 @@ import { z } from "zod";
 const memberSchema = z.object({
   school_id: z.string()
     .trim()
-    .regex(/^\d{4}-\d{5}$/, "School ID must be in format YYYY-NNNNN (e.g., 2021-12345)")
-    .max(20, "School ID is too long"),
+    .min(1, "School ID is required"),
   name: z.string()
     .trim()
     .min(2, "Name must be at least 2 characters")
     .max(100, "Name is too long"),
   program: z.enum(["BSCS", "BSIT", "BSIS", "BTVTED-CSS"], { errorMap: () => ({ message: "Please select a valid program" }) }),
   block: z.string()
-    .trim()
-    .max(10, "Block is too long")
-    .refine((val) => val === "" || /^[0-9][A-Z]$/.test(val), {
-      message: "Block must be empty or in format like 1A, 2B, 3C"
-    }),
+    .min(1, "Please select a block"),
 });
 
 const Members = () => {
@@ -243,12 +238,21 @@ const Members = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="block">Block *</Label>
-                <Input
-                  id="block"
+                <Select
                   value={formData.block}
-                  onChange={(e) => setFormData({ ...formData, block: e.target.value })}
-                  placeholder="e.g., 1A, 2B, 3C"
-                />
+                  onValueChange={(value) => setFormData({ ...formData, block: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select block" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4">4</SelectItem>
+                    <SelectItem value="5">5</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <Button type="submit" className="w-full">
                 {editingMember ? "Update Member" : "Add Member"}
