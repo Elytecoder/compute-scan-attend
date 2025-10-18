@@ -173,6 +173,44 @@ const Members = () => {
     setDeleteDialogOpen(true);
   };
 
+  const recalculateYearLevels = async () => {
+    setLoading(true);
+    const currentYear = 2025;
+    
+    try {
+      // Fetch all members
+      const { data: allMembers, error: fetchError } = await supabase
+        .from("members")
+        .select("*");
+
+      if (fetchError) throw fetchError;
+
+      // Calculate correct year levels based on school IDs
+      const updates = allMembers?.map((member) => {
+        const schoolId = member.school_id;
+        const enrollmentYear = parseInt(schoolId.substring(0, 2));
+        const fullEnrollmentYear = 2000 + enrollmentYear;
+        const calculatedYearLevel = currentYear - fullEnrollmentYear + 1;
+        const yearLevel = Math.min(4, Math.max(1, calculatedYearLevel));
+
+        return supabase
+          .from("members")
+          .update({ year_level: yearLevel })
+          .eq("id", member.id);
+      }) || [];
+
+      // Execute all updates
+      await Promise.all(updates);
+      
+      toast.success("Year levels recalculated successfully");
+      fetchMembers();
+    } catch (error: any) {
+      toast.error("Failed to recalculate year levels: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open);
     if (!open) {
@@ -213,7 +251,11 @@ const Members = () => {
           <h1 className="text-3xl font-bold">Members</h1>
           <p className="text-muted-foreground">Manage Computing Society members</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={recalculateYearLevels} disabled={loading}>
+            Recalculate Year Levels
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -303,7 +345,8 @@ const Members = () => {
               </Button>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -343,7 +386,7 @@ const Members = () => {
                   <SelectValue placeholder="All Programs" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value=" ">All Programs</SelectItem>
+                  <SelectItem value="">All Programs</SelectItem>
                   <SelectItem value="BSCS">BSCS</SelectItem>
                   <SelectItem value="BSIT">BSIT</SelectItem>
                   <SelectItem value="BSIS">BSIS</SelectItem>
@@ -355,7 +398,7 @@ const Members = () => {
                   <SelectValue placeholder="All Blocks" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value=" ">All Blocks</SelectItem>
+                  <SelectItem value="">All Blocks</SelectItem>
                   <SelectItem value="1">Block 1</SelectItem>
                   <SelectItem value="2">Block 2</SelectItem>
                   <SelectItem value="3">Block 3</SelectItem>
@@ -368,7 +411,7 @@ const Members = () => {
                   <SelectValue placeholder="All Year Levels" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value=" ">All Year Levels</SelectItem>
+                  <SelectItem value="">All Year Levels</SelectItem>
                   <SelectItem value="1">1st Year</SelectItem>
                   <SelectItem value="2">2nd Year</SelectItem>
                   <SelectItem value="3">3rd Year</SelectItem>
