@@ -37,12 +37,25 @@ const Scanner = () => {
         const html5QrcodeScanner = new Html5QrcodeScanner(
           "reader",
           { 
-            fps: 10, 
-            qrbox: { width: 400, height: 400 },
+            fps: 10,
+            qrbox: function(viewfinderWidth: number, viewfinderHeight: number) {
+              // Make the scanning box 80% of the viewport for better long-distance scanning
+              const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+              const qrboxSize = Math.floor(minEdgeSize * 0.8);
+              return {
+                width: qrboxSize,
+                height: qrboxSize
+              };
+            },
             formatsToSupport: [
               Html5QrcodeSupportedFormats.QR_CODE,
               Html5QrcodeSupportedFormats.CODE_39
-            ]
+            ],
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true
+            },
+            rememberLastUsedCamera: true,
+            aspectRatio: 1.0
           },
           false
         );
