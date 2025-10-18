@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,10 +8,10 @@ import { toast } from "sonner";
 import { CheckCircle, XCircle } from "lucide-react";
 import { z } from "zod";
 
-// Validation schema for school ID
+// Validation schema for school ID - accepts both QR format (0000-00000) and Code 39 barcode format (alphanumeric)
 const schoolIdSchema = z.string()
   .trim()
-  .regex(/^\d{4}-\d{5}$/, "Invalid school ID format")
+  .min(1, "School ID cannot be empty")
   .max(20, "School ID is too long");
 
 const Scanner = () => {
@@ -36,7 +36,14 @@ const Scanner = () => {
       const timer = setTimeout(() => {
         const html5QrcodeScanner = new Html5QrcodeScanner(
           "reader",
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          { 
+            fps: 10, 
+            qrbox: { width: 400, height: 400 },
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.QR_CODE,
+              Html5QrcodeSupportedFormats.CODE_39
+            ]
+          },
           false
         );
 
@@ -93,15 +100,33 @@ const Scanner = () => {
     }
   };
 
+  const playBeep = () => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.2);
+  };
+
   const onScanSuccess = async (decodedText: string) => {
     // Validate and sanitize school ID
     const validation = schoolIdSchema.safeParse(decodedText);
     if (!validation.success) {
       setLastScan({
         success: false,
-        message: `Invalid QR code format: ${decodedText}`,
+        message: `Invalid barcode format: ${decodedText}`,
       });
-      toast.error("Invalid QR code format. Please scan a valid membership card.");
+      toast.error("Invalid barcode format. Please scan a valid membership card.");
       return;
     }
     
@@ -157,6 +182,7 @@ const Scanner = () => {
         return;
       }
 
+      playBeep();
       setLastScan({
         success: true,
         message: `${member.name} - TIMED IN (${selectedSession.toUpperCase()})\n${member.program} ${member.block}`,
@@ -201,6 +227,7 @@ const Scanner = () => {
         return;
       }
 
+      playBeep();
       setLastScan({
         success: true,
         message: `${member.name} - TIMED OUT (${selectedSession.toUpperCase()})`,
