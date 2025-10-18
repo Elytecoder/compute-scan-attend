@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, User, Pencil, Trash2, Search } from "lucide-react";
@@ -37,6 +38,11 @@ const Members = () => {
   const [memberToDelete, setMemberToDelete] = useState<any>(null);
   const [searchSchoolId, setSearchSchoolId] = useState("");
   const [searchName, setSearchName] = useState("");
+  const [filterProgram, setFilterProgram] = useState<string>("");
+  const [filterBlock, setFilterBlock] = useState<string>("");
+  const [filterYearLevel, setFilterYearLevel] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState<{
     school_id: string;
     name: string;
@@ -175,7 +181,7 @@ const Members = () => {
     }
   };
 
-  // Filter members based on search criteria
+  // Filter members based on search and filter criteria
   const filteredMembers = members.filter((member) => {
     const matchesSchoolId = searchSchoolId
       ? member.school_id.toLowerCase().includes(searchSchoolId.toLowerCase())
@@ -183,8 +189,22 @@ const Members = () => {
     const matchesName = searchName
       ? member.name.toLowerCase().includes(searchName.toLowerCase())
       : true;
-    return matchesSchoolId && matchesName;
+    const matchesProgram = filterProgram ? member.program === filterProgram : true;
+    const matchesBlock = filterBlock ? member.block === filterBlock : true;
+    const matchesYearLevel = filterYearLevel ? member.year_level?.toString() === filterYearLevel : true;
+    return matchesSchoolId && matchesName && matchesProgram && matchesBlock && matchesYearLevel;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedMembers = filteredMembers.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchSchoolId, searchName, filterProgram, filterBlock, filterYearLevel]);
 
   return (
     <div className="space-y-6">
@@ -292,28 +312,69 @@ const Members = () => {
           <CardDescription>View all registered members</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by School ID..."
-                  value={searchSchoolId}
-                  onChange={(e) => setSearchSchoolId(e.target.value)}
-                  className="pl-10"
-                />
+          <div className="space-y-4 mb-4">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by School ID..."
+                    value={searchSchoolId}
+                    onChange={(e) => setSearchSchoolId(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by Name..."
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
             </div>
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by Name..."
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="flex gap-4">
+              <Select value={filterProgram} onValueChange={setFilterProgram}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="All Programs" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=" ">All Programs</SelectItem>
+                  <SelectItem value="BSCS">BSCS</SelectItem>
+                  <SelectItem value="BSIT">BSIT</SelectItem>
+                  <SelectItem value="BSIS">BSIS</SelectItem>
+                  <SelectItem value="BTVTED-CSS">BTVTED-CSS</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterBlock} onValueChange={setFilterBlock}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="All Blocks" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=" ">All Blocks</SelectItem>
+                  <SelectItem value="1">Block 1</SelectItem>
+                  <SelectItem value="2">Block 2</SelectItem>
+                  <SelectItem value="3">Block 3</SelectItem>
+                  <SelectItem value="4">Block 4</SelectItem>
+                  <SelectItem value="5">Block 5</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterYearLevel} onValueChange={setFilterYearLevel}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="All Year Levels" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=" ">All Year Levels</SelectItem>
+                  <SelectItem value="1">1st Year</SelectItem>
+                  <SelectItem value="2">2nd Year</SelectItem>
+                  <SelectItem value="3">3rd Year</SelectItem>
+                  <SelectItem value="4">4th Year</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {loading ? (
@@ -338,7 +399,7 @@ const Members = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredMembers.map((member) => (
+                {paginatedMembers.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">{member.school_id}</TableCell>
                     <TableCell>
@@ -375,6 +436,52 @@ const Members = () => {
                 ))}
               </TableBody>
             </Table>
+          )}
+          {filteredMembers.length > 0 && totalPages > 1 && (
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    } else if (page === currentPage - 2 || page === currentPage + 2) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           )}
         </CardContent>
       </Card>
