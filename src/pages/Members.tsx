@@ -38,9 +38,9 @@ const Members = () => {
   const [memberToDelete, setMemberToDelete] = useState<any>(null);
   const [searchSchoolId, setSearchSchoolId] = useState("");
   const [searchName, setSearchName] = useState("");
-  const [filterProgram, setFilterProgram] = useState<string>("");
-  const [filterBlock, setFilterBlock] = useState<string>("");
-  const [filterYearLevel, setFilterYearLevel] = useState<string>("");
+  const [filterProgram, setFilterProgram] = useState<string>("all");
+  const [filterBlock, setFilterBlock] = useState<string>("all");
+  const [filterYearLevel, setFilterYearLevel] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [formData, setFormData] = useState<{
@@ -227,9 +227,9 @@ const Members = () => {
     const matchesName = searchName
       ? member.name.toLowerCase().includes(searchName.toLowerCase())
       : true;
-    const matchesProgram = filterProgram ? member.program === filterProgram : true;
-    const matchesBlock = filterBlock ? member.block === filterBlock : true;
-    const matchesYearLevel = filterYearLevel ? member.year_level?.toString() === filterYearLevel : true;
+    const matchesProgram = filterProgram !== "all" ? member.program === filterProgram : true;
+    const matchesBlock = filterBlock !== "all" ? member.block === filterBlock : true;
+    const matchesYearLevel = filterYearLevel !== "all" ? member.year_level?.toString() === filterYearLevel : true;
     return matchesSchoolId && matchesName && matchesProgram && matchesBlock && matchesYearLevel;
   });
 
@@ -386,7 +386,7 @@ const Members = () => {
                   <SelectValue placeholder="All Programs" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Programs</SelectItem>
+                  <SelectItem value="all">All Programs</SelectItem>
                   <SelectItem value="BSCS">BSCS</SelectItem>
                   <SelectItem value="BSIT">BSIT</SelectItem>
                   <SelectItem value="BSIS">BSIS</SelectItem>
@@ -398,7 +398,7 @@ const Members = () => {
                   <SelectValue placeholder="All Blocks" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Blocks</SelectItem>
+                  <SelectItem value="all">All Blocks</SelectItem>
                   <SelectItem value="1">Block 1</SelectItem>
                   <SelectItem value="2">Block 2</SelectItem>
                   <SelectItem value="3">Block 3</SelectItem>
@@ -411,7 +411,7 @@ const Members = () => {
                   <SelectValue placeholder="All Year Levels" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Year Levels</SelectItem>
+                  <SelectItem value="all">All Year Levels</SelectItem>
                   <SelectItem value="1">1st Year</SelectItem>
                   <SelectItem value="2">2nd Year</SelectItem>
                   <SelectItem value="3">3rd Year</SelectItem>
