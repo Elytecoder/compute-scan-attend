@@ -54,7 +54,16 @@ const UploadMembers = () => {
 
       setProgress(30);
       const existingIds = new Set(existingMembers?.map(m => m.school_id) || []);
-      const newMembers = allMembers.filter(m => !existingIds.has(m.school_id));
+      
+      // Filter out existing members and deduplicate within new data
+      const seenIds = new Set<string>();
+      const newMembers = allMembers.filter(m => {
+        if (existingIds.has(m.school_id) || seenIds.has(m.school_id)) {
+          return false;
+        }
+        seenIds.add(m.school_id);
+        return true;
+      });
 
       if (newMembers.length === 0) {
         toast.info("All members are already in the database!");
