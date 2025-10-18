@@ -119,9 +119,14 @@ const Scanner = () => {
   };
 
   const onScanSuccess = async (decodedText: string) => {
+    console.log("Scanned value:", decodedText);
+    
     // Validate and sanitize school ID
     const validation = schoolIdSchema.safeParse(decodedText);
+    console.log("Validation result:", validation);
+    
     if (!validation.success) {
+      console.log("Validation failed:", validation.error);
       setLastScan({
         success: false,
         message: `Invalid barcode format: ${decodedText}`,
@@ -131,6 +136,7 @@ const Scanner = () => {
     }
     
     const schoolId = validation.data;
+    console.log("Validated school ID:", schoolId);
     
     // Find member by school ID
     const { data: member, error: memberError } = await supabase
@@ -138,6 +144,8 @@ const Scanner = () => {
       .select("*")
       .eq("school_id", schoolId)
       .maybeSingle();
+
+    console.log("Member query result:", { member, memberError });
 
     if (memberError || !member) {
       setLastScan({
