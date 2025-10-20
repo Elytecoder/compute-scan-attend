@@ -2,6 +2,13 @@
 
 A comprehensive web-based attendance monitoring system designed for SORS University's Computing Society. This application streamlines member registration, event management, and attendance tracking through QR code and barcode scanning.
 
+##Domain Link
+https://comsoc-attendance-monitoring.lovable.app/
+
+##Submitted by:
+Daniel Ely Gojar
+BS Comp[uter Science 4-1
+
 ## Features
 
 ### 🔐 Authentication
@@ -65,32 +72,6 @@ A comprehensive web-based attendance monitoring system designed for SORS Univers
 - **date-fns** - Date manipulation
 - **Zod** - Schema validation
 - **React Hook Form** - Form management
-
-## Getting Started
-
-### Prerequisites
-- Node.js (v18 or higher)
-- npm or bun package manager
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd <project-directory>
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start the development server:
-```bash
-npm run dev
-```
-
-The application will be available at `http://localhost:5173`
 
 ## Project Structure
 
@@ -168,33 +149,6 @@ src/
 - Email domain restriction (@sorsu.edu.ph)
 - Protected routes prevent unauthorized access
 
-## Deployment
-
-The application can be deployed via Lovable's one-click deployment:
-
-1. Click the Publish button in the Lovable editor
-2. Your app will be deployed to a lovable.app subdomain
-3. Optionally connect a custom domain in Project Settings
-
-## Contributing
-
-This project was built using Lovable, an AI-powered web development platform. To make changes:
-
-1. Use the Lovable editor at https://lovable.dev
-2. Or clone the repository and push changes via GitHub
-3. Changes sync automatically between Lovable and GitHub
-
-## Support
-
-For issues or questions:
-- Check the project documentation
-- Contact the Computing Society administrators
-- Refer to [Lovable Documentation](https://docs.lovable.dev)
-
 ## License
 
-This project is developed for SORS University Computing Society.
-
----
-
-Built with ❤️ using [Lovable](https://lovable.dev)
+This project is developed for Sorsogon State University-Computing Society and in project requirement for Software Development 2.
