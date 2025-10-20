@@ -2,10 +2,10 @@
 
 A comprehensive web-based attendance monitoring system designed for SORS University's Computing Society. This application streamlines member registration, event management, and attendance tracking through QR code and barcode scanning.
 
-##Domain Link
+## Domain Link
 https://comsoc-attendance-monitoring.lovable.app/
 
-##Submitted by:
+## Submitted by:
 Daniel Ely Gojar
 BS Comp[uter Science 4-1
 
