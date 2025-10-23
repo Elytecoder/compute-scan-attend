@@ -79,7 +79,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@sorsu.edu.ph\",\n  \"password\": \"TestPassword123!\"\n}"
+              "raw": "{\n  \"email\": \"ely.gojar@sorsu.edu.ph\",\n  \"password\": \"danielely\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/v1/token?grant_type=password",

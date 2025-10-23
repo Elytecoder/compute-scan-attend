@@ -6,23 +6,29 @@ https://lojxwobotbkwwiccxnwk.supabase.co/rest/v1
 ```
 
 ## Authentication
-All endpoints require authentication using a Bearer token in the Authorization header:
+
+### Step-by-Step: How to Test in Postman
+
+1. **First, Sign In to Get Your Access Token:**
+   - Use the "Authentication > Sign In" request
+   - The response will include an `access_token`
+   - This token is **automatically saved** to `{{access_token}}` variable
+
+2. **Use the Token in All Other Requests:**
+   - Every endpoint (Members, Events, Attendance) already has `Authorization: Bearer {{access_token}}` configured
+   - Just make sure you've signed in first!
+
+### Your Test Account
+- **Email**: ely.gojar@sorsu.edu.ph
+- **Password**: danielely
+- **Role**: Admin (full CRUD permissions)
+
+### Required Headers
+All endpoints require these headers:
 ```
+apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvanh3b2JvdGJrd3dpY2N4bndrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MTU3ODcsImV4cCI6MjA3NDk5MTc4N30.I44Mmo3bWgVugskLf4XTLkZ6tPQYOApyTxQyCVBOiN4
 Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
-
-**Anon Key (for signup/signin):**
-```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvanh3b2JvdGJrd3dpY2N4bndrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MTU3ODcsImV4cCI6MjA3NDk5MTc4N30.I44Mmo3bWgVugskLf4XTLkZ6tPQYOApyTxQyCVBOiN4
-```
-
-## Test Credentials
-```
-Email: test@sorsu.edu.ph
-Password: TestPassword123!
-```
-
-*Note: Sign up with any @sorsu.edu.ph email address. Auto-confirmation is enabled.*
 
 ---
 
@@ -47,7 +53,7 @@ Password: TestPassword123!
   }
   ```
 
-#### 2. Sign In
+#### 2. Sign In (⭐ START HERE)
 - **Method:** `POST`
 - **URL:** `https://lojxwobotbkwwiccxnwk.supabase.co/auth/v1/token?grant_type=password`
 - **Description:** Authenticate and get access token
@@ -59,8 +65,20 @@ Password: TestPassword123!
 - **Request Body:**
   ```json
   {
-    "email": "test@sorsu.edu.ph",
-    "password": "TestPassword123!"
+    "email": "ely.gojar@sorsu.edu.ph",
+    "password": "danielely"
+  }
+  ```
+- **Response (contains your access token):**
+  ```json
+  {
+    "access_token": "eyJhbGc...",
+    "token_type": "bearer",
+    "expires_in": 3600,
+    "user": {
+      "id": "49d3d55f-f2e3-4225-9603-f8f3b24eb049",
+      "email": "ely.gojar@sorsu.edu.ph"
+    }
   }
   ```
 
