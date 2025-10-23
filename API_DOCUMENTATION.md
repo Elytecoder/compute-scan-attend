@@ -9,14 +9,28 @@ https://lojxwobotbkwwiccxnwk.supabase.co/rest/v1
 
 ### Step-by-Step: How to Test in Postman
 
-1. **First, Sign In to Get Your Access Token:**
-   - Use the "Authentication > Sign In" request
-   - The response will include an `access_token`
-   - This token is **automatically saved** to `{{access_token}}` variable
+1. **Import the Collection:**
+   - Import `postman_collection.json` into Postman
 
-2. **Use the Token in All Other Requests:**
-   - Every endpoint (Members, Events, Attendance) already has `Authorization: Bearer {{access_token}}` configured
-   - Just make sure you've signed in first!
+2. **Sign In to Get Your Access Token:**
+   - Go to "Authentication > Sign In" request
+   - Click **Send**
+   - You should see a response with `access_token`
+   - The token is **automatically saved** to `{{access_token}}` variable (check "Collections" tab variables)
+
+3. **Verify Token is Saved:**
+   - Look at the collection variables (click on the collection name → Variables tab)
+   - `{{access_token}}` should now have a value starting with `eyJ...`
+
+4. **Test Any Endpoint:**
+   - Try "Members > Get All Members"
+   - Should return 858 members (not an empty array!)
+   - If you still get `[]`, the token wasn't saved - repeat step 2
+
+**Troubleshooting Empty Array `[]` Response:**
+- ✅ Status 200 means the request worked
+- ❌ Empty array means authentication failed
+- **Solution:** Make sure you ran "Sign In" request first and check that `{{access_token}}` has a value
 
 ### Your Test Account
 - **Email**: ely.gojar@sorsu.edu.ph
