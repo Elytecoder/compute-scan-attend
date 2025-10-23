@@ -1,0 +1,566 @@
+{
+  "info": {
+    "name": "Computing Society Attendance Monitoring API",
+    "description": "Complete API collection for the Computing Society Attendance Monitoring System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://lojxwobotbkwwiccxnwk.supabase.co",
+      "type": "string"
+    },
+    {
+      "key": "anon_key",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvanh3b2JvdGJrd3dpY2N4bndrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MTU3ODcsImV4cCI6MjA3NDk5MTc4N30.I44Mmo3bWgVugskLf4XTLkZ6tPQYOApyTxQyCVBOiN4",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Sign Up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@sorsu.edu.ph\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/signup",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "v1", "signup"]
+            }
+          }
+        },
+        {
+          "name": "Sign In",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response.access_token) {",
+                  "    pm.collectionVariables.set('access_token', response.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@sorsu.edu.ph\",\n  \"password\": \"TestPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/token?grant_type=password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "v1", "token"],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "item": [
+        {
+          "name": "Get All Members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/members",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "members"]
+            }
+          }
+        },
+        {
+          "name": "Get Member by School ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/members?school_id=eq.2021-00001",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "members"],
+              "query": [
+                {
+                  "key": "school_id",
+                  "value": "eq.2021-00001"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"school_id\": \"2023-00010\",\n  \"name\": \"Carlos Lopez\",\n  \"program\": \"BSCS\",\n  \"year_level\": 1,\n  \"block\": \"A\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/members",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "members"]
+            }
+          }
+        },
+        {
+          "name": "Update Member",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year_level\": 2,\n  \"block\": \"B\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/members?school_id=eq.2023-00010",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "members"],
+              "query": [
+                {
+                  "key": "school_id",
+                  "value": "eq.2023-00010"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Member",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/members?school_id=eq.2023-00010",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "members"],
+              "query": [
+                {
+                  "key": "school_id",
+                  "value": "eq.2023-00010"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "Get All Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/events",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "events"]
+            }
+          }
+        },
+        {
+          "name": "Get Event by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/events?id=eq.EVENT_ID_HERE",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "events"],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.EVENT_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Python Workshop\",\n  \"description\": \"Hands-on Python programming workshop\",\n  \"event_date\": \"2025-11-20\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/events",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "events"]
+            }
+          }
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated workshop description\",\n  \"event_date\": \"2025-11-22\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/events?id=eq.EVENT_ID_HERE",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "events"],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.EVENT_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/events?id=eq.EVENT_ID_HERE",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "events"],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.EVENT_ID_HERE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "Get All Attendance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/attendance?select=*,members(*),events(*)",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "attendance"],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*,members(*),events(*)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Attendance by Event",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/attendance?event_id=eq.EVENT_ID_HERE&select=*,members(*)",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "attendance"],
+              "query": [
+                {
+                  "key": "event_id",
+                  "value": "eq.EVENT_ID_HERE"
+                },
+                {
+                  "key": "select",
+                  "value": "*,members(*)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Record Attendance (Check-in)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"member_id\": \"MEMBER_UUID_HERE\",\n  \"event_id\": \"EVENT_UUID_HERE\",\n  \"session\": \"morning\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/attendance",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "attendance"]
+            }
+          }
+        },
+        {
+          "name": "Update Attendance (Check-out)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"time_out\": \"2025-11-01T12:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/attendance?id=eq.ATTENDANCE_ID_HERE",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "attendance"],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.ATTENDANCE_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Attendance",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/attendance?id=eq.ATTENDANCE_ID_HERE",
+              "host": ["{{base_url}}"],
+              "path": ["rest", "v1", "attendance"],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.ATTENDANCE_ID_HERE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

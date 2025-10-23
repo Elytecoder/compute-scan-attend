@@ -5,9 +5,13 @@ A comprehensive web-based attendance monitoring system designed for SORS Univers
 ## Domain Link
 https://comsoc-attendance-monitoring.lovable.app/
 
+## API Documentation
+📘 **[Complete API Documentation](./API_DOCUMENTATION.md)** - Detailed endpoint reference with examples  
+📦 **[Postman Collection](./postman_collection.json)** - Import into Postman for immediate testing
+
 ## Submitted by:
 Daniel Ely Gojar
-BS Comp[uter Science 4-1
+BS Computer Science 4-1
 
 ## Features
 
@@ -142,12 +146,49 @@ src/
 - Records attendance with member and event relationships
 - Timestamp tracking for check-in times
 
+## API Access
+
+### Base URL
+```
+https://lojxwobotbkwwiccxnwk.supabase.co/rest/v1
+```
+
+### Authentication
+All API requests require authentication using a Bearer token. Get your token by signing in through the authentication endpoint.
+
+### Quick Start
+1. Sign up with your @sorsu.edu.ph email
+2. Sign in to get your access token
+3. Use the token in the Authorization header for all requests
+4. See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete endpoint reference
+
+### Test Data Available
+The database includes seed data for immediate testing:
+- 5 sample members
+- 4 sample events
+- Ready for attendance recording
+
+### Postman Testing
+Import `postman_collection.json` into Postman to test all endpoints immediately. The collection includes:
+- Pre-configured requests for all CRUD operations
+- Automatic token management after sign-in
+- Sample data for testing
+
+### Environment Variables
+```env
+VITE_SUPABASE_URL=https://lojxwobotbkwwiccxnwk.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<redacted>
+VITE_SUPABASE_PROJECT_ID=<redacted>
+```
+⚠️ **Note:** `.env` file is included in `.gitignore` to prevent committing sensitive data.
+
 ## Security
 
 - Row Level Security (RLS) enabled on all tables
 - Authentication required for all operations
 - Email domain restriction (@sorsu.edu.ph)
 - Protected routes prevent unauthorized access
+- Role-based permissions (Officer/Admin)
 
 ## License
 
