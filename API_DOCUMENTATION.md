@@ -12,25 +12,34 @@ https://lojxwobotbkwwiccxnwk.supabase.co/rest/v1
 1. **Import the Collection:**
    - Import `postman_collection.json` into Postman
 
-2. **Sign In to Get Your Access Token:**
+2. **CRITICAL: Set Up Required Headers**
+   
+   Every REST API request needs TWO headers:
+   ```
+   Authorization: Bearer {{access_token}}
+   apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvanh3b2JvdGJrd3dpY2N4bndrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MTU3ODcsImV4cCI6MjA3NDk5MTc4N30.I44Mmo3bWgVugskLf4XTLkZ6tPQYOApyTxQyCVBOiN4
+   ```
+   
+   **These should be auto-configured in the collection**, but verify they're there!
+
+3. **Sign In to Get Your Access Token:**
    - Go to "Authentication > Sign In" request
    - Click **Send**
-   - You should see a response with `access_token`
-   - The token is **automatically saved** to `{{access_token}}` variable (check "Collections" tab variables)
-
-3. **Verify Token is Saved:**
-   - Look at the collection variables (click on the collection name → Variables tab)
-   - `{{access_token}}` should now have a value starting with `eyJ...`
+   - Copy the `access_token` from the response (starts with `eyJ...`)
+   - **Manually set** the collection variable:
+     - Click collection name → Variables tab
+     - Set `access_token` to the value you copied
+     - Click **Save**
 
 4. **Test Any Endpoint:**
    - Try "Members > Get All Members"
    - Should return 858 members (not an empty array!)
-   - If you still get `[]`, the token wasn't saved - repeat step 2
 
-**Troubleshooting Empty Array `[]` Response:**
-- ✅ Status 200 means the request worked
-- ❌ Empty array means authentication failed
-- **Solution:** Make sure you ran "Sign In" request first and check that `{{access_token}}` has a value
+**Why You're Getting Empty Array `[]`:**
+- ✅ Status 200 = API is reachable
+- ❌ Empty array = **RLS policies blocked you** because authentication failed
+- **Root Cause**: Missing or expired `access_token` in Authorization header
+- **Fix**: Complete step 3 above and make sure BOTH headers are present in every request
 
 ### Your Test Account
 - **Email**: ely.gojar@sorsu.edu.ph
