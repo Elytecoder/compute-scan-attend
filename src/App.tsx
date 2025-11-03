@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Scanner from "./pages/Scanner";
 import Events from "./pages/Events";
 import Members from "./pages/Members";
+import Users from "./pages/Users";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import UploadMembers from "./pages/UploadMembers";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="scanner" element={<Scanner />} />
               <Route path="events" element={<Events />} />
               <Route path="members" element={<Members />} />
+              <Route path="users" element={<Users />} />
               <Route path="upload-members" element={<UploadMembers />} />
               <Route path="reports" element={<Reports />} />
             </Route>
