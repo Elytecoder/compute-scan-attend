@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, CheckCircle2 } from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle } from "lucide-react";
 import { parseMembersData } from "@/data/members-data";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const UploadMembers = () => {
   const [uploading, setUploading] = useState(false);
@@ -17,6 +19,12 @@ const UploadMembers = () => {
     uploaded: number;
   } | null>(null);
   const [progress, setProgress] = useState(0);
+  const [missingMembers, setMissingMembers] = useState<Array<{
+    school_id: string;
+    name: string;
+    program: string;
+    year_level: number;
+  }>>([]);
 
   useEffect(() => {
     const analyzeData = async () => {
@@ -34,6 +42,7 @@ const UploadMembers = () => {
         newMembers: newMembers.length,
         uploaded: 0,
       });
+      setMissingMembers(newMembers);
     };
 
     analyzeData();
@@ -162,6 +171,31 @@ const UploadMembers = () => {
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm">{uploadStatus}</p>
             </div>
+          )}
+
+          {missingMembers.length > 0 && (
+            <Collapsible className="mt-4">
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  View {missingMembers.length} Missing Members
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <ScrollArea className="h-[300px] rounded-md border p-4">
+                  <div className="space-y-2">
+                    {missingMembers.map((member, index) => (
+                      <div key={index} className="p-2 bg-muted rounded text-sm">
+                        <p className="font-medium">{member.school_id} - {member.name}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {member.program} - Year {member.year_level}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </CardContent>
       </Card>
