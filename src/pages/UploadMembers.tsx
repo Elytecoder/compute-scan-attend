@@ -29,16 +29,16 @@ const UploadMembers = () => {
   useEffect(() => {
     const analyzeData = async () => {
       const allMembers = parseMembersData();
-      const { data: existingMembers } = await supabase
+      const { data: existingMembers, count } = await supabase
         .from("members")
-        .select("school_id");
+        .select("school_id", { count: 'exact' });
 
       const existingIds = new Set(existingMembers?.map(m => m.school_id) || []);
       const newMembers = allMembers.filter(m => !existingIds.has(m.school_id));
 
       setStats({
         total: allMembers.length,
-        existing: existingIds.size,
+        existing: count || 0,
         newMembers: newMembers.length,
         uploaded: 0,
       });
