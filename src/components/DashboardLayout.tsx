@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Home, QrCode, Calendar, BarChart3, Users, UserCog, LogOut } from "lucide-react";
+import { Home, QrCode, Calendar, BarChart3, Users, UserCog, LogOut, Upload } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +22,7 @@ const menuItems = [
   { title: "Scan Attendance", url: "/dashboard/scanner", icon: QrCode },
   { title: "Events", url: "/dashboard/events", icon: Calendar },
   { title: "Members", url: "/dashboard/members", icon: Users },
+  { title: "Upload Members", url: "/dashboard/upload-members", icon: Upload },
   { title: "Users", url: "/dashboard/users", icon: UserCog },
   { title: "Reports", url: "/dashboard/reports", icon: BarChart3 },
 ];
