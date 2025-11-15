@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { parseExcelStudents, StudentRecord } from "@/utils/parseExcelStudents";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, FileSpreadsheet, Database, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { toast } from "sonner";
+import { Loader2, FileSpreadsheet, Database, AlertCircle, CheckCircle2, XCircle, Upload } from "lucide-react";
 
 interface ComparisonStats {
   excelTotal: number;
@@ -18,6 +20,8 @@ interface ComparisonStats {
 
 const ComparisonReport = () => {
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
   const [excelStudents, setExcelStudents] = useState<StudentRecord[]>([]);
   const [dbStudents, setDbStudents] = useState<any[]>([]);
   const [stats, setStats] = useState<ComparisonStats | null>(null);
@@ -64,6 +68,53 @@ const ComparisonReport = () => {
       console.error('Error loading comparison data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImportNewStudents = async () => {
+    if (newStudentsList.length === 0) {
+      toast.info("No new students to import");
+      return;
+    }
+
+    setImporting(true);
+    setImportProgress(0);
+
+    try {
+      // Batch insert students in chunks of 50
+      const batchSize = 50;
+      let successCount = 0;
+      
+      for (let i = 0; i < newStudentsList.length; i += batchSize) {
+        const batch = newStudentsList.slice(i, i + batchSize);
+        
+        const { data, error } = await supabase
+          .from('members')
+          .insert(batch)
+          .select();
+
+        if (error) {
+          console.error('Error inserting batch:', error);
+          toast.error(`Error importing batch: ${error.message}`);
+        } else {
+          successCount += data?.length || 0;
+        }
+
+        // Update progress
+        setImportProgress(Math.round(((i + batch.length) / newStudentsList.length) * 100));
+      }
+
+      toast.success(`Successfully imported ${successCount} new students!`);
+      
+      // Reload data to refresh the comparison
+      await loadData();
+      
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast.error(`Import failed: ${error.message}`);
+    } finally {
+      setImporting(false);
+      setImportProgress(0);
     }
   };
 
@@ -260,13 +311,28 @@ const ComparisonReport = () => {
         </CardContent>
       </Card>
 
+      {importing && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Importing students...</span>
+                <span>{importProgress}%</span>
+              </div>
+              <Progress value={importProgress} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex gap-2">
-        <Button onClick={loadData} variant="outline">
+        <Button onClick={loadData} variant="outline" disabled={importing}>
           Refresh Data
         </Button>
         {stats && stats.newStudents > 0 && (
-          <Button>
-            Import {stats.newStudents} New Students
+          <Button onClick={handleImportNewStudents} disabled={importing}>
+            <Upload className="h-4 w-4 mr-2" />
+            {importing ? 'Importing...' : `Import ${stats.newStudents} New Students`}
           </Button>
         )}
       </div>
