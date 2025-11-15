@@ -88,16 +88,21 @@ const ComparisonReport = () => {
       for (let i = 0; i < newStudentsList.length; i += batchSize) {
         const batch = newStudentsList.slice(i, i + batchSize);
         
-        const { data, error } = await supabase
-          .from('members')
-          .insert(batch)
-          .select();
+        // Insert each student individually to handle duplicates gracefully
+        for (const student of batch) {
+          const { data, error } = await supabase
+            .from('members')
+            .insert(student)
+            .select();
 
-        if (error) {
-          console.error('Error inserting batch:', error);
-          toast.error(`Error importing batch: ${error.message}`);
-        } else {
-          successCount += data?.length || 0;
+          if (error) {
+            // Only log non-duplicate errors
+            if (error.code !== '23505') {
+              console.error('Error inserting student:', error);
+            }
+          } else {
+            successCount += data?.length || 0;
+          }
         }
 
         // Update progress
