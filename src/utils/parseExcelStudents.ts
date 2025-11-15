@@ -23,8 +23,9 @@ export async function parseExcelStudents(filePath: string): Promise<StudentRecor
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
       
-      let program: 'BSCS' | 'BSIT' | 'BSIS' | 'BTVTED-CSS' = 'BSCS';
-      let yearLevel = 1;
+      // Reset for each sheet
+      let program: 'BSCS' | 'BSIT' | 'BSIS' | 'BTVTED-CSS' | null = null;
+      let yearLevel: number | null = null;
       let inStudentSection = false;
       let sheetStudentCount = 0;
       
@@ -32,18 +33,20 @@ export async function parseExcelStudents(filePath: string): Promise<StudentRecor
         const row = data[i];
         if (!row || row.length === 0) continue;
         
-        // Extract course/program
-        if (row[0] === 'Course:' && row[1]) {
-          const courseText = String(row[1]);
+        // Extract course/program - check first few columns
+        if (String(row[0]).includes('Course:')) {
+          const courseText = String(row[1] || row[2] || '');
           if (courseText.includes('BSCS')) program = 'BSCS';
           else if (courseText.includes('BSIT')) program = 'BSIT';
           else if (courseText.includes('BSIS')) program = 'BSIS';
           else if (courseText.includes('BTVTED')) program = 'BTVTED-CSS';
+          console.log(`Found program: ${program} in sheet ${sheetName}`);
         }
         
-        // Extract year level
-        if (row[0] === 'Year Level:' && row[1]) {
-          yearLevel = Number(row[1]);
+        // Extract year level - check first few columns
+        if (String(row[0]).includes('Year Level:')) {
+          yearLevel = Number(row[1] || row[2] || 1);
+          console.log(`Found year level: ${yearLevel} in sheet ${sheetName}`);
         }
         
         // Check if we're in the student data section
@@ -110,7 +113,7 @@ export async function parseExcelStudents(filePath: string): Promise<StudentRecor
               }
             }
             
-            if (lastName && firstName) {
+            if (lastName && firstName && program && yearLevel) {
               const fullName = `${firstName} ${middleName} ${lastName}`.replace(/\s+/g, ' ').trim();
               
               allStudents.push({
@@ -123,6 +126,8 @@ export async function parseExcelStudents(filePath: string): Promise<StudentRecor
               
               seenIds.add(studentNumber);
               sheetStudentCount++;
+            } else if (lastName && firstName) {
+              console.warn(`Skipping student ${studentNumber} - missing program or year level`);
             }
           }
         }
