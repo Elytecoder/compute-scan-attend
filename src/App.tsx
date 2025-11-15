@@ -15,6 +15,7 @@ import Users from "./pages/Users";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import UploadMembers from "./pages/UploadMembers";
+import CountStudents from "./pages/CountStudents";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="members" element={<Members />} />
               <Route path="users" element={<Users />} />
               <Route path="upload-members" element={<UploadMembers />} />
+              <Route path="count-students" element={<CountStudents />} />
               <Route path="reports" element={<Reports />} />
             </Route>
             <Route path="*" element={<NotFound />} />
