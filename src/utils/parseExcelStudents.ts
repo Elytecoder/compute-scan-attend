@@ -15,6 +15,9 @@ export async function parseExcelStudents(filePath: string): Promise<StudentRecor
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
     
     const allStudents: StudentRecord[] = [];
+    const seenIds = new Set<string>();
+    
+    console.log(`Processing ${workbook.SheetNames.length} sheets`);
     
     workbook.SheetNames.forEach((sheetName) => {
       const worksheet = workbook.Sheets[sheetName];
@@ -23,9 +26,11 @@ export async function parseExcelStudents(filePath: string): Promise<StudentRecor
       let program: 'BSCS' | 'BSIT' | 'BSIS' | 'BTVTED-CSS' = 'BSCS';
       let yearLevel = 1;
       let inStudentSection = false;
+      let sheetStudentCount = 0;
       
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
+        if (!row || row.length === 0) continue;
         
         // Extract course/program
         if (row[0] === 'Course:' && row[1]) {
@@ -47,33 +52,62 @@ export async function parseExcelStudents(filePath: string): Promise<StudentRecor
           continue;
         }
         
-        // Parse student rows
-        if (inStudentSection && row[1]) {
+        // End of student section - but don't stop completely, just reset flag
+        if (row[0] && String(row[0]).toLowerCase().includes('hereby certify')) {
+          inStudentSection = false;
+          continue;
+        }
+        
+        // Parse student rows - more flexible matching
+        if (row[1]) {
           let studentNumber = String(row[1]).trim();
           
-          // Check if this is a valid student number
-          if (/^\d{2}-?\d{6}/.test(studentNumber) || (typeof row[1] === 'number' && String(row[1]).length >= 8)) {
-            // Clean student number
-            studentNumber = studentNumber.replace(/^24-/, '24').replace(/^25-/, '25').replace(/^23-/, '23');
+          // Check if this is a valid student number (more flexible)
+          const isValidStudentNumber = /^\d{2}-?\d{6}/.test(studentNumber) || 
+                                       (typeof row[1] === 'number' && String(row[1]).length >= 8) ||
+                                       /^24\d{6}|25\d{6}|23\d{6}/.test(studentNumber);
+          
+          if (isValidStudentNumber) {
+            // Clean student number - handle various formats
+            studentNumber = studentNumber
+              .replace(/^24-/, '24')
+              .replace(/^25-/, '25')
+              .replace(/^23-/, '23')
+              .replace(/^22-/, '22')
+              .replace(/^21-/, '21');
+            
             if (studentNumber.length === 8 && !studentNumber.includes('-')) {
               studentNumber = studentNumber.slice(0, 2) + '-' + studentNumber.slice(2);
             }
             
-            // Extract name (columns vary by format)
+            // Skip duplicates
+            if (seenIds.has(studentNumber)) continue;
+            
+            // Extract name - check multiple column patterns
             let firstName = '';
             let middleName = '';
             let lastName = '';
             
-            if (row[4] && row[5]) {
-              // Format: Last, First, Middle in columns 4, 5, 6
+            // Pattern 1: Columns 4, 5, 6 (standard format)
+            if (row[4] && String(row[4]).trim()) {
               lastName = String(row[4] || '').trim();
               firstName = String(row[5] || '').trim();
               middleName = String(row[6] || '').trim();
-            } else if (row[2]) {
-              // Alternative format with name in single column
-              const nameParts = String(row[2]).trim().split(' ');
-              lastName = nameParts[0] || '';
-              firstName = nameParts.slice(1).join(' ');
+            }
+            // Pattern 2: Columns 2, 3, 4 (alternative format)
+            else if (row[2] && String(row[2]).trim() && row[3] && String(row[3]).trim()) {
+              lastName = String(row[2] || '').trim();
+              firstName = String(row[3] || '').trim();
+              middleName = String(row[4] || '').trim();
+            }
+            // Pattern 3: Single name column
+            else if (row[2] && String(row[2]).trim()) {
+              const fullNameText = String(row[2]).trim();
+              const nameParts = fullNameText.split(/\s+/);
+              if (nameParts.length >= 2) {
+                lastName = nameParts[nameParts.length - 1];
+                firstName = nameParts.slice(0, -1).join(' ');
+              }
             }
             
             if (lastName && firstName) {
@@ -84,17 +118,20 @@ export async function parseExcelStudents(filePath: string): Promise<StudentRecor
                 name: fullName,
                 program: program,
                 year_level: yearLevel,
-                block: 'A' // Default block as Excel doesn't specify
+                block: 'A'
               });
+              
+              seenIds.add(studentNumber);
+              sheetStudentCount++;
             }
-          } else if (row[0] && String(row[0]).includes('hereby certify')) {
-            // End of student section
-            inStudentSection = false;
           }
         }
       }
+      
+      console.log(`Sheet "${sheetName}": ${sheetStudentCount} students (${program} Year ${yearLevel})`);
     });
     
+    console.log(`Total students parsed: ${allStudents.length}`);
     return allStudents;
   } catch (error) {
     console.error('Error parsing Excel students:', error);
