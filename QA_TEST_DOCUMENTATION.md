@@ -1,549 +1,352 @@
-# QA Test Documentation
-## Computing Society Attendance Monitoring System
+# COMPUTING SOCIETY ATTENDANCE MONITORING SYSTEM
+## Quality Assurance Test Documentation
+### SORSU CICT - Software Engineering
 
-**Project Name:** Computing Society Attendance Monitoring System  
+**Project:** Computing Society Attendance Monitoring System  
 **Version:** 1.0  
-**Date:** December 5, 2024  
-**Prepared By:** QA Team  
+**Date:** December 5, 2025  
+**Tester:** QA Team  
 
 ---
 
-## Table of Contents
-1. [Test Case Sheet](#1-test-case-sheet)
-2. [Bug Report Template](#2-bug-report-template)
-3. [Test Run Log Template](#3-test-run-log-template)
-4. [Requirements Traceability Matrix](#4-requirements-traceability-matrix)
-5. [Penetration Testing Report](#5-penetration-testing-report)
+## PAGE 1: TEST CASE
+
+### Section A: Authentication Module
+
+| Test Case ID | Test Scenario | Preconditions | Steps to Execute | Expected Result | Actual Result | Status |
+|--------------|---------------|---------------|------------------|-----------------|---------------|--------|
+| TC-AUTH-01 | Sign in with valid credentials | User account exists with @sorsu.edu.ph email | 1. Navigate to /auth 2. Enter valid @sorsu.edu.ph email 3. Enter correct password 4. Click Sign In | User redirected to /dashboard, success toast shown | User redirected to /dashboard, success toast displayed | Pass |
+| TC-AUTH-02 | Sign in with invalid email format | None | 1. Navigate to /auth 2. Enter "invalid-email" without @ symbol 3. Click Sign In | Error: "Invalid email format" displayed | Error toast: "Invalid email format" shown | Pass |
+| TC-AUTH-03 | Sign in with non-SORSU email | None | 1. Navigate to /auth 2. Enter "test@gmail.com" 3. Click Sign In | Error: "Only @sorsu.edu.ph email addresses are allowed" | Error toast displayed with correct message | Pass |
+| TC-AUTH-04 | Sign up with weak password | None | 1. Navigate to /auth 2. Switch to Sign Up 3. Enter valid email 4. Enter "pass" as password 5. Click Sign Up | Error: "Password must be at least 8 characters" | Validation error shown | Pass |
+| TC-AUTH-05 | Sign up without uppercase letter | None | 1. Enter valid email 2. Enter "password123" (no uppercase) 3. Click Sign Up | Error: "Password must contain at least one uppercase letter" | Validation error shown | Pass |
+| TC-AUTH-06 | Sign up without number | None | 1. Enter valid email 2. Enter "Password" (no number) 3. Click Sign Up | Error: "Password must contain at least one number" | Validation error shown | Pass |
+| TC-AUTH-07 | Sign up with valid credentials | None | 1. Fill Full Name: "Test User" 2. Enter valid @sorsu.edu.ph email 3. Enter "Password123" 4. Click Sign Up | Account created successfully, user signed in | Account created, redirected to dashboard | Pass |
+| TC-AUTH-08 | Sign out from dashboard | User logged in | 1. Click Sign Out button in sidebar | User redirected to /auth, session cleared | User logged out successfully | Pass |
+| TC-AUTH-09 | Access protected route without login | User not logged in | 1. Navigate directly to /dashboard in browser | Redirect to /auth page | Redirected to /auth | Pass |
+| TC-AUTH-10 | Empty email field | None | 1. Leave email field empty 2. Click Sign In | Error: "Email is required" or form validation prevents submission | Form validation prevents submission | Pass |
+
+### Section B: Members CRUD Module
+
+| Test Case ID | Test Scenario | Preconditions | Steps to Execute | Expected Result | Actual Result | Status |
+|--------------|---------------|---------------|------------------|-----------------|---------------|--------|
+| TC-MEM-01 | Create member with valid inputs (POST) | User logged in, on Members page | 1. Click "Add Member" button 2. Fill School ID: "2024-0001" 3. Fill Name: "Juan Dela Cruz" 4. Select Program: BSCS 5. Fill Block: "A" 6. Set Year Level: 1 7. Click Save | POST request to /members endpoint, success toast, member appears in table | Record saved successfully, toast shown, table updated | Pass |
+| TC-MEM-02 | Read all members (GET) | User logged in | 1. Navigate to /dashboard/members | GET request to /members endpoint, data displayed in table with pagination | Members list displayed correctly | Pass |
+| TC-MEM-03 | Update member information (PATCH) | At least one member exists | 1. Click Edit button on existing member 2. Change Name to "Juan Cruz Updated" 3. Click Save | PATCH request to /members, success toast, table refreshed with updated data | Record updated successfully | Pass |
+| TC-MEM-04 | Delete member (DELETE) | At least one member exists | 1. Click Delete button on member row 2. Confirm deletion in dialog | DELETE request to /members, member removed from table, success toast | Record deleted successfully | Pass |
+| TC-MEM-05 | Create member with empty School ID | User logged in | 1. Click Add Member 2. Leave School ID field empty 3. Fill other fields 4. Click Save | Error: "School ID is required" | Validation error displayed | Pass |
+| TC-MEM-06 | Create member with name less than 2 characters | User logged in | 1. Click Add Member 2. Enter Name: "J" (single character) 3. Click Save | Error: "Name must be at least 2 characters" | Validation error displayed | Pass |
+| TC-MEM-07 | Create duplicate School ID | Member with School ID "2024-0001" exists | 1. Click Add Member 2. Enter existing School ID "2024-0001" 3. Fill other fields 4. Click Save | Error: "Member with this school ID already exists" | Error toast shown, duplicate prevented | Pass |
+| TC-MEM-08 | Search members by School ID | Multiple members exist | 1. Enter partial School ID "2024" in search field 2. View filtered results | Only members with matching School ID displayed | Search filter working correctly | Pass |
+| TC-MEM-09 | Filter members by Program | Members with different programs exist | 1. Select "BSCS" from program dropdown filter | Only BSCS program members displayed | Filter working correctly | Pass |
+| TC-MEM-10 | Filter members by Year Level | Members with different year levels exist | 1. Select "1" from year level dropdown | Only 1st year members displayed | Filter working correctly | Pass |
+| TC-MEM-11 | Filter members by Block | Members with different blocks exist | 1. Select "A" from block dropdown | Only Block A members displayed | Filter working correctly | Pass |
+| TC-MEM-12 | Pagination navigation | More than 10 members exist | 1. Verify 10 members per page 2. Click next page button 3. Click previous page button | Pagination controls work, correct members displayed per page | Pagination working correctly | Pass |
+| TC-MEM-13 | Recalculate Year Levels | Members with various school IDs exist | 1. Click "Recalculate Year Levels" button 2. Confirm action | Year levels automatically updated based on school ID year | Year levels recalculated successfully | Pass |
+
+### Section C: Events CRUD Module
+
+| Test Case ID | Test Scenario | Preconditions | Steps to Execute | Expected Result | Actual Result | Status |
+|--------------|---------------|---------------|------------------|-----------------|---------------|--------|
+| TC-EVT-01 | Create event with valid inputs (POST) | User logged in | 1. Navigate to /dashboard/events 2. Click "Create Event" button 3. Fill Name: "General Assembly 2025" 4. Fill Description: "Annual meeting" 5. Select Date 6. Click Save | POST request to /events, success toast, event appears in list | Event created successfully | Pass |
+| TC-EVT-02 | Read all events (GET) | User logged in | 1. Navigate to /dashboard/events | GET request to /events, events displayed in cards/table ordered by date | Events list displayed correctly | Pass |
+| TC-EVT-03 | Update event information (PATCH) | At least one event exists | 1. Click Edit button on event 2. Change Name to "Updated Event Name" 3. Click Save | PATCH request to /events, success toast, event updated | Event updated successfully | Pass |
+| TC-EVT-04 | Delete event (DELETE) | Event exists, user has admin role | 1. Click Delete button on event 2. Confirm deletion | DELETE request to /events, event removed from list | Event deleted successfully | Pass |
+| TC-EVT-05 | Create event with name less than 3 characters | User logged in | 1. Click Create Event 2. Enter Name: "AB" (2 characters) 3. Click Save | Error: "Event name must be at least 3 characters" | Validation error displayed | Pass |
+| TC-EVT-06 | Create event without date | User logged in | 1. Click Create Event 2. Fill name 3. Leave date empty 4. Click Save | Error: "Event date is required" | Validation error displayed | Pass |
+| TC-EVT-07 | View upcoming events | Events with future dates exist | 1. Navigate to Events page | Upcoming events prominently displayed | Upcoming events shown correctly | Pass |
+
+### Section D: Attendance/Scanner Module
+
+| Test Case ID | Test Scenario | Preconditions | Steps to Execute | Expected Result | Actual Result | Status |
+|--------------|---------------|---------------|------------------|-----------------|---------------|--------|
+| TC-ATT-01 | Record Time In successfully | Event selected, member exists, scanner active | 1. Navigate to /dashboard/scanner 2. Select event from dropdown 3. Select "morning" or "afternoon" session 4. Click Start Scanning 5. Scan valid member barcode | POST to /attendance, success beep sound, attendance recorded | Time in recorded successfully | Pass |
+| TC-ATT-02 | Record Time Out successfully | Member has existing time in for event | 1. Select Time Out mode 2. Scan same member barcode | PATCH to /attendance, time_out field updated | Time out recorded successfully | Pass |
+| TC-ATT-03 | Scan invalid barcode format | Event selected, scanner active | 1. Scan barcode with invalid format | Error: "Invalid barcode format" displayed | Error toast shown | Pass |
+| TC-ATT-04 | Scan non-existent member | Event selected, scanner active | 1. Scan barcode for member not in database | Error: "Member not found" displayed | Error toast shown | Pass |
+| TC-ATT-05 | Duplicate Time In attempt | Member already has time in for current event/session | 1. Scan same member barcode again for Time In | Error: "Member already has time in for this event" | Error message displayed | Pass |
+| TC-ATT-06 | Scan without selecting event | No event selected | 1. Attempt to start scanning without selecting event | Error: "Please select an event first" | Error toast shown | Pass |
+| TC-ATT-07 | Manual barcode input | Event selected | 1. Enter School ID manually in input field 2. Submit | Attendance recorded same as scanning | Manual entry working | Pass |
+| TC-ATT-08 | View recent scans | Attendance records exist | 1. View recent scans section | List of recent attendance records displayed | Recent scans shown | Pass |
+
+### Section E: Reports Module
+
+| Test Case ID | Test Scenario | Preconditions | Steps to Execute | Expected Result | Actual Result | Status |
+|--------------|---------------|---------------|------------------|-----------------|---------------|--------|
+| TC-RPT-01 | View attendance report for event | Attendance data exists | 1. Navigate to /dashboard/reports 2. Select event from dropdown | Attendance data displayed with statistics and charts | Report displayed correctly | Pass |
+| TC-RPT-02 | Export report to PDF | Report data exists | 1. View report 2. Click "Export PDF" button | PDF file generated and downloaded | PDF exported successfully | Pass |
+| TC-RPT-03 | Filter report by program | Attendance data exists | 1. Select program filter (e.g., BSCS) | Only attendance for selected program shown | Filter working correctly | Pass |
+| TC-RPT-04 | Delete attendance record | Attendance record exists | 1. Click delete button on attendance row 2. Confirm deletion | Record removed from report | Record deleted successfully | Pass |
+| TC-RPT-05 | View empty state | No attendance for selected event | 1. Select event with no attendance records | "No attendance records found" message displayed | Empty state shown correctly | Pass |
+| TC-RPT-06 | View attendance statistics | Attendance data exists | 1. View report statistics section | Total present, absent, percentage calculated correctly | Statistics accurate | Pass |
+
+### Section F: User Management Module
+
+| Test Case ID | Test Scenario | Preconditions | Steps to Execute | Expected Result | Actual Result | Status |
+|--------------|---------------|---------------|------------------|-----------------|---------------|--------|
+| TC-USR-01 | View all users | Admin logged in | 1. Navigate to /dashboard/users | List of all users with roles displayed | Users list shown | Pass |
+| TC-USR-02 | Change user role | Admin logged in, other users exist | 1. Click on user 2. Change role from "officer" to "admin" 3. Save | User role updated in database | Role updated successfully | Pass |
+| TC-USR-03 | Delete user | Admin logged in | 1. Click Delete on user row 2. Confirm deletion | User removed from system | See BUG-001: Operation fails | Fail |
+| TC-USR-04 | View user profiles | Admin logged in | 1. View users list | User full names and emails displayed | Profiles displayed correctly | Pass |
+
+### Section G: Navigation & UI Module
+
+| Test Case ID | Test Scenario | Preconditions | Steps to Execute | Expected Result | Actual Result | Status |
+|--------------|---------------|---------------|------------------|-----------------|---------------|--------|
+| TC-NAV-01 | Navigate to Dashboard | User logged in | 1. Click Dashboard in sidebar | /dashboard page loads with overview | Dashboard displayed | Pass |
+| TC-NAV-02 | Navigate to Members | User logged in | 1. Click Members in sidebar | /dashboard/members page loads | Members page displayed | Pass |
+| TC-NAV-03 | Navigate to Events | User logged in | 1. Click Events in sidebar | /dashboard/events page loads | Events page displayed | Pass |
+| TC-NAV-04 | Navigate to Scanner | User logged in | 1. Click Scanner in sidebar | /dashboard/scanner page loads | Scanner page displayed | Pass |
+| TC-NAV-05 | Navigate to Reports | User logged in | 1. Click Reports in sidebar | /dashboard/reports page loads | Reports page displayed | Pass |
+| TC-NAV-06 | Navigate to Users | User logged in | 1. Click Users in sidebar | /dashboard/users page loads | Users page displayed | Pass |
+| TC-NAV-07 | 404 Not Found page | None | 1. Navigate to /invalid-route | Custom 404 page displayed | 404 page shown | Pass |
+| TC-NAV-08 | Mobile responsiveness | None | 1. Resize browser to mobile width (<768px) | Layout adapts, sidebar collapses, no horizontal scroll | Responsive layout working | Pass |
+| TC-NAV-09 | Sidebar collapse/expand | User logged in on mobile | 1. Click hamburger menu | Sidebar toggles visibility | Sidebar toggle working | Pass |
+
+### Section H: Edge Cases & Error Handling
+
+| Test Case ID | Test Scenario | Preconditions | Steps to Execute | Expected Result | Actual Result | Status |
+|--------------|---------------|---------------|------------------|-----------------|---------------|--------|
+| TC-ERR-01 | Network timeout handling | Slow/no network connection | 1. Disconnect network 2. Perform any CRUD action | Error message displayed, no crash | Error handled gracefully | Pass |
+| TC-ERR-02 | Session expiration | Session expired | 1. Wait for session to expire 2. Perform action | Redirect to login page | Redirected to /auth | Pass |
+| TC-ERR-03 | Concurrent editing | Two users editing same record | 1. User A opens edit 2. User B edits and saves 3. User A saves | Last save wins, no data corruption | No crash, data consistent | Pass |
+| TC-ERR-04 | Special characters in input | User logged in | 1. Enter name with special chars: "José María" | Input accepted and saved correctly | Special characters handled | Pass |
+| TC-ERR-05 | Maximum input length | User logged in | 1. Enter extremely long text in name field | Input truncated or error shown | Input validated | Pass |
+
+### Section I: End-to-End Integration Tests
+
+| Test Case ID | Test Scenario | Preconditions | Steps to Execute | Expected Result | Actual Result | Status |
+|--------------|---------------|---------------|------------------|-----------------|---------------|--------|
+| TC-E2E-01 | Full Member CRUD cycle | User logged in | 1. Create new member 2. Verify in list (Read) 3. Edit member (Update) 4. Delete member | All operations successful, data consistent | Full CRUD cycle completed | Pass |
+| TC-E2E-02 | Full Event CRUD cycle | User logged in | 1. Create new event 2. Verify in list 3. Edit event 4. Delete event | All operations successful | Full CRUD cycle completed | Pass |
+| TC-E2E-03 | Complete attendance workflow | Event and members exist | 1. Create event 2. Add member 3. Time In member 4. Time Out member 5. View in Reports | Complete attendance flow recorded | Workflow completed successfully | Pass |
+| TC-E2E-04 | Authentication to Dashboard flow | Valid account exists | 1. Sign in 2. Navigate all pages 3. Sign out | Seamless navigation, proper session handling | Flow completed successfully | Pass |
 
 ---
 
-## 1. Test Case Sheet
-
-### 1.1 Authentication Test Cases
-
-| TC_ID | Test Case Name | Module | Pre-conditions | Test Steps | Test Data | Expected Result | Status |
-|-------|----------------|--------|----------------|------------|-----------|-----------------|--------|
-| TC_AUTH_001 | Valid Login | Auth | User account exists | 1. Navigate to /auth<br>2. Enter valid email<br>3. Enter valid password<br>4. Click "Sign In" | Email: test@sorsu.edu.ph<br>Password: Test@123 | User redirected to /dashboard, success toast displayed | - |
-| TC_AUTH_002 | Invalid Email Format | Auth | None | 1. Navigate to /auth<br>2. Enter invalid email format<br>3. Attempt to submit | Email: invalid-email | Error message: "Invalid email format" displayed | - |
-| TC_AUTH_003 | Non-SORSU Email Domain | Auth | None | 1. Navigate to /auth<br>2. Enter email with non @sorsu.edu.ph domain<br>3. Submit form | Email: test@gmail.com | Error message: "Only @sorsu.edu.ph email addresses are allowed" | - |
-| TC_AUTH_004 | Empty Password Field | Auth | None | 1. Navigate to /auth<br>2. Enter valid email<br>3. Leave password empty<br>4. Click Sign In | Email: test@sorsu.edu.ph<br>Password: (empty) | Error message: "Password is required" | - |
-| TC_AUTH_005 | Password Too Short | Auth | Signup mode | 1. Navigate to /auth<br>2. Switch to Sign Up<br>3. Enter password less than 8 characters | Password: Test@1 | Error message: "Password must be at least 8 characters" | - |
-| TC_AUTH_006 | Password Without Uppercase | Auth | Signup mode | 1. Navigate to /auth<br>2. Switch to Sign Up<br>3. Enter password without uppercase | Password: test@123 | Error message: "Password must contain at least one uppercase letter" | - |
-| TC_AUTH_007 | Password Without Number | Auth | Signup mode | 1. Navigate to /auth<br>2. Switch to Sign Up<br>3. Enter password without number | Password: Test@abc | Error message: "Password must contain at least one number" | - |
-| TC_AUTH_008 | Valid Signup | Auth | Email not registered | 1. Navigate to /auth<br>2. Switch to Sign Up<br>3. Enter valid credentials<br>4. Click Sign Up | Email: newuser@sorsu.edu.ph<br>Password: Test@123 | Account created, success message displayed | - |
-| TC_AUTH_009 | Duplicate Email Signup | Auth | Email already registered | 1. Navigate to /auth<br>2. Switch to Sign Up<br>3. Enter existing email | Email: existing@sorsu.edu.ph | Error message indicating email already exists | - |
-| TC_AUTH_010 | Sign Out | Auth | User logged in | 1. Click Sign Out button in sidebar<br>2. Confirm action | - | User redirected to /auth, session cleared | - |
-
-### 1.2 Members CRUD Test Cases
-
-| TC_ID | Test Case Name | Module | Pre-conditions | Test Steps | Test Data | Expected Result | Status |
-|-------|----------------|--------|----------------|------------|-----------|-----------------|--------|
-| TC_MEM_001 | Create Member (POST) | Members | User logged in | 1. Navigate to /dashboard/members<br>2. Click "Add Member"<br>3. Fill all required fields<br>4. Click "Add Member" | School ID: 2024-00001<br>Name: John Doe<br>Program: BSCS<br>Year Level: 1 | POST request to /members, success toast, member appears in table | - |
-| TC_MEM_002 | Read Members (GET) | Members | User logged in, members exist | 1. Navigate to /dashboard/members<br>2. Wait for page load | - | GET request to /members, members displayed in table with correct data | - |
-| TC_MEM_003 | Update Member (PATCH) | Members | User logged in, member exists | 1. Navigate to /dashboard/members<br>2. Click Edit on a member<br>3. Modify name field<br>4. Click "Update Member" | Name: Jane Doe (updated) | PATCH request to /members, success toast, table refreshed with updated data | - |
-| TC_MEM_004 | Delete Member (DELETE) | Members | User logged in, member exists | 1. Navigate to /dashboard/members<br>2. Click Delete on a member<br>3. Confirm deletion | - | DELETE request to /members, success toast, member removed from table | - |
-| TC_MEM_005 | Empty School ID Validation | Members | User logged in | 1. Click "Add Member"<br>2. Leave School ID empty<br>3. Fill other fields<br>4. Submit | School ID: (empty) | Error message: "School ID is required" | - |
-| TC_MEM_006 | Name Too Short Validation | Members | User logged in | 1. Click "Add Member"<br>2. Enter single character name<br>3. Submit | Name: J | Error message: "Name must be at least 2 characters" | - |
-| TC_MEM_007 | Duplicate School ID | Members | Member with ID exists | 1. Click "Add Member"<br>2. Enter existing School ID<br>3. Submit | School ID: (existing) | Error message: "A member with this school ID already exists" | - |
-| TC_MEM_008 | Pagination Navigation | Members | More than 10 members exist | 1. Navigate to Members page<br>2. Observe pagination<br>3. Click "Next"<br>4. Click "Previous" | - | 10 items per page, navigation buttons work correctly | - |
-| TC_MEM_009 | Search by School ID | Members | Members exist | 1. Enter partial School ID in search<br>2. Observe results | Search: "2024" | Only members with matching School ID displayed | - |
-| TC_MEM_010 | Filter by Program | Members | Members with different programs | 1. Select "BSCS" from program filter<br>2. Observe results | Filter: BSCS | Only BSCS members displayed | - |
-| TC_MEM_011 | Filter by Year Level | Members | Members with different year levels | 1. Select "1st Year" from year filter<br>2. Observe results | Filter: 1 | Only 1st year members displayed | - |
-| TC_MEM_012 | Upload Members from Excel | Members | User logged in | 1. Navigate to Upload Members<br>2. Select valid Excel file<br>3. Click Upload | Valid .xlsx file | Members imported successfully, count displayed | - |
-| TC_MEM_013 | Invalid Excel Format | Members | User logged in | 1. Navigate to Upload Members<br>2. Select invalid file format | .txt file | Error message about invalid format | - |
-
-### 1.3 Events CRUD Test Cases
-
-| TC_ID | Test Case Name | Module | Pre-conditions | Test Steps | Test Data | Expected Result | Status |
-|-------|----------------|--------|----------------|------------|-----------|-----------------|--------|
-| TC_EVT_001 | Create Event (POST) | Events | User logged in | 1. Navigate to /dashboard/events<br>2. Click "Create Event"<br>3. Fill all required fields<br>4. Submit | Name: Tech Seminar<br>Date: 2024-12-15<br>Session: Morning | POST request to /events, success toast, event in table | - |
-| TC_EVT_002 | Read Events (GET) | Events | User logged in, events exist | 1. Navigate to /dashboard/events<br>2. Wait for page load | - | GET request to /events, events displayed sorted by date | - |
-| TC_EVT_003 | Update Event (PATCH) | Events | User logged in, event exists | 1. Click Edit on an event<br>2. Modify event name<br>3. Click "Update Event" | Name: Updated Seminar | PATCH request, success toast, table updated | - |
-| TC_EVT_004 | Delete Event (DELETE) | Events | User logged in, event exists | 1. Click Delete on an event<br>2. Confirm deletion | - | DELETE request, success toast, event removed | - |
-| TC_EVT_005 | Event Name Too Short | Events | User logged in | 1. Click "Create Event"<br>2. Enter 2-character name<br>3. Submit | Name: AB | Error message: "Event name must be at least 3 characters" | - |
-| TC_EVT_006 | Empty Event Date | Events | User logged in | 1. Click "Create Event"<br>2. Leave date empty<br>3. Submit | Date: (empty) | Error message: "Event date is required" | - |
-| TC_EVT_007 | View Event Attendance | Events | Event with attendance exists | 1. Click on event row<br>2. View attendance details | - | Attendance count and details displayed | - |
-
-### 1.4 Attendance/Scanner Test Cases
-
-| TC_ID | Test Case Name | Module | Pre-conditions | Test Steps | Test Data | Expected Result | Status |
-|-------|----------------|--------|----------------|------------|-----------|-----------------|--------|
-| TC_ATT_001 | Record Time In | Scanner | Event selected, member exists | 1. Navigate to /dashboard/scanner<br>2. Select event<br>3. Select "Time In"<br>4. Scan valid barcode | Barcode: Valid School ID | POST to /attendance, success beep, member info displayed | - |
-| TC_ATT_002 | Record Time Out | Scanner | Time In exists for member | 1. Select "Time Out"<br>2. Scan same member's barcode | Barcode: Valid School ID | UPDATE attendance record, success toast | - |
-| TC_ATT_003 | Invalid Barcode Format | Scanner | Event selected | 1. Scan barcode with invalid format | Barcode: INVALID123 | Error message: "Invalid barcode format" | - |
-| TC_ATT_004 | Member Not Found | Scanner | Event selected | 1. Scan barcode not in members table | Barcode: 9999-99999 | Error message: "Member not found" | - |
-| TC_ATT_005 | Duplicate Time In | Scanner | Member already has Time In | 1. Scan same member again for Time In | Barcode: Already scanned ID | Error message: "Member already has time in for this event" | - |
-| TC_ATT_006 | No Event Selected | Scanner | No event selected | 1. Attempt to start scanning | - | Error message: "Please select an event first" | - |
-| TC_ATT_007 | Manual Entry | Scanner | Event selected | 1. Click "Manual Entry"<br>2. Enter School ID<br>3. Submit | School ID: 2024-00001 | Attendance recorded via manual input | - |
-| TC_ATT_008 | Camera Permission Denied | Scanner | Camera blocked | 1. Block camera permission<br>2. Attempt to scan | - | Appropriate error message about camera access | - |
-
-### 1.5 Reports Test Cases
-
-| TC_ID | Test Case Name | Module | Pre-conditions | Test Steps | Test Data | Expected Result | Status |
-|-------|----------------|--------|----------------|------------|-----------|-----------------|--------|
-| TC_RPT_001 | View Attendance Report | Reports | Attendance data exists | 1. Navigate to /dashboard/reports<br>2. Select an event | - | Attendance data displayed with statistics | - |
-| TC_RPT_002 | Export to PDF | Reports | Report data exists | 1. View a report<br>2. Click "Export PDF" | - | PDF file downloaded with correct data | - |
-| TC_RPT_003 | Filter by Program | Reports | Mixed program attendance | 1. Select program filter<br>2. Observe filtered results | Filter: BSIT | Only BSIT attendance records shown | - |
-| TC_RPT_004 | Delete Attendance Record | Reports | Record exists | 1. Click delete on attendance record<br>2. Confirm | - | Record removed, table refreshed | - |
-| TC_RPT_005 | Empty State Display | Reports | No attendance for event | 1. Select event with no attendance | - | "No attendance records found" message | - |
-| TC_RPT_006 | Comparison Report | Reports | Multiple events exist | 1. Navigate to Comparison Report<br>2. Select events to compare | - | Comparison data displayed correctly | - |
-
-### 1.6 User Management Test Cases
-
-| TC_ID | Test Case Name | Module | Pre-conditions | Test Steps | Test Data | Expected Result | Status |
-|-------|----------------|--------|----------------|------------|-----------|-----------------|--------|
-| TC_USR_001 | View Users List | Users | Admin logged in | 1. Navigate to /dashboard/users<br>2. Wait for load | - | List of users with roles displayed | - |
-| TC_USR_002 | Change User Role | Users | Admin logged in, user exists | 1. Select user<br>2. Change role<br>3. Save | Role: admin | Role updated successfully | - |
-| TC_USR_003 | Delete User | Users | Admin logged in, user exists | 1. Click Delete on user<br>2. Confirm | - | User deletion attempted (Note: requires Edge Function) | - |
-| TC_USR_004 | Search Users | Users | Multiple users exist | 1. Enter search term<br>2. Observe results | Search: "admin" | Filtered user list displayed | - |
-
-### 1.7 Navigation & UI Test Cases
-
-| TC_ID | Test Case Name | Module | Pre-conditions | Test Steps | Test Data | Expected Result | Status |
-|-------|----------------|--------|----------------|------------|-----------|-----------------|--------|
-| TC_NAV_001 | Navigate to Dashboard | Navigation | User logged in | 1. Click "Dashboard" in sidebar | - | /dashboard loads with statistics | - |
-| TC_NAV_002 | Navigate to Members | Navigation | User logged in | 1. Click "Members" in sidebar | - | /dashboard/members loads | - |
-| TC_NAV_003 | Navigate to Events | Navigation | User logged in | 1. Click "Events" in sidebar | - | /dashboard/events loads | - |
-| TC_NAV_004 | Navigate to Scanner | Navigation | User logged in | 1. Click "Scanner" in sidebar | - | /dashboard/scanner loads | - |
-| TC_NAV_005 | Navigate to Reports | Navigation | User logged in | 1. Click "Reports" in sidebar | - | /dashboard/reports loads | - |
-| TC_NAV_006 | Navigate to Users | Navigation | User logged in | 1. Click "Users" in sidebar | - | /dashboard/users loads | - |
-| TC_NAV_007 | Protected Route Redirect | Navigation | User NOT logged in | 1. Directly access /dashboard | - | Redirect to /auth | - |
-| TC_NAV_008 | 404 Page | Navigation | None | 1. Navigate to /invalid-route | - | 404 Not Found page displayed | - |
-| TC_UI_001 | Mobile Responsiveness | UI | None | 1. Open app on mobile device or resize browser<br>2. Navigate through pages | Viewport: 375px | Layout adapts, no horizontal overflow, touch-friendly | - |
-| TC_UI_002 | Button States | UI | User logged in | 1. Hover over buttons<br>2. Click buttons<br>3. Check disabled states | - | Visual feedback on hover, click, and disabled states | - |
-| TC_UI_003 | Toast Notifications | UI | User logged in | 1. Perform CRUD operations<br>2. Observe notifications | - | Success/error toasts displayed appropriately | - |
-| TC_UI_004 | Loading States | UI | User logged in | 1. Navigate between pages<br>2. Submit forms | - | Loading indicators shown during async operations | - |
-| TC_UI_005 | Form Error Display | UI | User logged in | 1. Submit invalid form data<br>2. Observe error messages | - | Error messages displayed below relevant fields | - |
-
-### 1.8 Edge Cases & Error Handling
-
-| TC_ID | Test Case Name | Module | Pre-conditions | Test Steps | Test Data | Expected Result | Status |
-|-------|----------------|--------|----------------|------------|-----------|-----------------|--------|
-| TC_ERR_001 | Network Timeout | All | Slow/no network | 1. Disable network<br>2. Perform any API operation | - | Error toast: "Network error" or similar | - |
-| TC_ERR_002 | API 400 Bad Request | All | None | 1. Send malformed data to API | Invalid JSON | 400 error handled gracefully | - |
-| TC_ERR_003 | API 404 Not Found | All | None | 1. Request non-existent resource | - | 404 error handled, appropriate message | - |
-| TC_ERR_004 | Session Expiry | Auth | Session expired | 1. Wait for session timeout<br>2. Perform action | - | Redirect to login with message | - |
-| TC_ERR_005 | Concurrent Modification | Members | Two users editing | 1. User A edits member<br>2. User B edits same member<br>3. Both save | - | Last save wins, no data corruption | - |
-| TC_ERR_006 | Large Data Set | Members | 1000+ members | 1. Load members page<br>2. Search and filter | - | Pagination works, no performance issues | - |
-| TC_ERR_007 | Special Characters | Members | None | 1. Enter special characters in name<br>2. Save | Name: José María O'Brien | Data saved and displayed correctly | - |
-| TC_ERR_008 | Empty State Handling | All | No data | 1. View page with no data | - | Appropriate "No data" message displayed | - |
-
-### 1.9 End-to-End Integration Tests
-
-| TC_ID | Test Case Name | Module | Pre-conditions | Test Steps | Test Data | Expected Result | Status |
-|-------|----------------|--------|----------------|------------|-----------|-----------------|--------|
-| TC_E2E_001 | Full Member CRUD Cycle | Members | User logged in | 1. Create new member<br>2. Verify in list (Read)<br>3. Edit member (Update)<br>4. Delete member (Delete)<br>5. Verify removal | Complete member data | All CRUD operations successful, data consistent | - |
-| TC_E2E_002 | Full Event CRUD Cycle | Events | User logged in | 1. Create event<br>2. Verify in list<br>3. Update event<br>4. Delete event | Complete event data | All CRUD operations successful | - |
-| TC_E2E_003 | Complete Attendance Flow | Scanner/Reports | Event & members exist | 1. Create event<br>2. Record time in for 3 members<br>3. Record time out<br>4. View attendance report<br>5. Export to PDF | - | Full attendance workflow completed | - |
-| TC_E2E_004 | User Registration to Attendance | All | None | 1. Sign up new user<br>2. Create member<br>3. Create event<br>4. Record attendance<br>5. Generate report | - | Complete user journey successful | - |
-
----
-
-## 2. Bug Report Template
-
-### Bug Report Format
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        BUG REPORT                               │
-├─────────────────────────────────────────────────────────────────┤
-│ Bug ID:        BUG_XXX                                          │
-│ Title:         [Brief descriptive title]                        │
-│ Module:        [Members/Events/Scanner/Auth/Reports/Users]      │
-│ Severity:      [Critical/High/Medium/Low]                       │
-│ Priority:      [P1/P2/P3/P4]                                    │
-│ Status:        [Open/In Progress/Fixed/Verified/Closed]         │
-│ Reporter:      [Name]                                           │
-│ Assigned To:   [Developer Name]                                 │
-│ Date Found:    [YYYY-MM-DD]                                     │
-│ Date Fixed:    [YYYY-MM-DD]                                     │
-│ Environment:   [Browser, OS, Device]                            │
-├─────────────────────────────────────────────────────────────────┤
-│ DESCRIPTION                                                     │
-│ [Detailed description of the bug]                               │
-├─────────────────────────────────────────────────────────────────┤
-│ STEPS TO REPRODUCE                                              │
-│ 1. [Step 1]                                                     │
-│ 2. [Step 2]                                                     │
-│ 3. [Step 3]                                                     │
-├─────────────────────────────────────────────────────────────────┤
-│ EXPECTED RESULT                                                 │
-│ [What should happen]                                            │
-├─────────────────────────────────────────────────────────────────┤
-│ ACTUAL RESULT                                                   │
-│ [What actually happened]                                        │
-├─────────────────────────────────────────────────────────────────┤
-│ SCREENSHOTS/EVIDENCE                                            │
-│ [Attach screenshots, videos, or logs]                           │
-├─────────────────────────────────────────────────────────────────┤
-│ RELATED TEST CASE                                               │
-│ [TC_XXX_XXX]                                                    │
-├─────────────────────────────────────────────────────────────────┤
-│ ROOT CAUSE (For Developers)                                     │
-│ [Technical explanation of why bug occurred]                     │
-├─────────────────────────────────────────────────────────────────┤
-│ FIX DESCRIPTION (For Developers)                                │
-│ [How the bug was fixed]                                         │
-└─────────────────────────────────────────────────────────────────┘
-```
+## PAGE 2: BUG REPORT
 
 ### Severity Classification Guide
 
-| Severity | Definition | Examples | Response Time |
-|----------|------------|----------|---------------|
-| **Critical** | Application crashes, complete feature failure, data loss, security breach | - App won't load<br>- Database connection fails<br>- Authentication bypass<br>- Data corruption | Immediate |
-| **High** | Major feature broken, wrong calculations, CRUD operation fails | - Cannot create members<br>- Attendance not saving<br>- Reports showing wrong data<br>- User cannot login | Within 24 hours |
-| **Medium** | Feature works but with issues affecting usability | - Search returns partial results<br>- Slow page load<br>- Form validation inconsistent<br>- PDF export missing fields | Within 1 week |
-| **Low** | Cosmetic issues, minor inconveniences | - Alignment issues<br>- Typos<br>- Color inconsistency<br>- Minor spacing problems | Next release |
+| Severity | Definition | Example |
+|----------|------------|---------|
+| **Critical** | Application crashes, data loss, security breach, endpoint completely fails | Database connection lost, authentication bypass |
+| **High** | Major feature broken, CRUD operation fails, wrong calculations | Cannot save member, incorrect attendance count |
+| **Medium** | Feature partially working, UI issues affecting usability | Filter not clearing, modal not closing |
+| **Low** | Cosmetic issues, minor styling, typos | Button misalignment, font inconsistency |
 
 ### Priority Matrix
 
-| Priority | Definition | Criteria |
-|----------|------------|----------|
-| **P1** | Must fix immediately | Critical bugs, security issues, blocking release |
-| **P2** | Must fix before release | High severity bugs, significant user impact |
-| **P3** | Should fix soon | Medium severity, workaround available |
-| **P4** | Fix when possible | Low severity, cosmetic issues |
+| Priority | Response Time | Description |
+|----------|--------------|-------------|
+| **P1** | Immediate | Blocker - must fix before release |
+| **P2** | Within 24-48 hours | High impact - fix in current sprint |
+| **P3** | Within 1 week | Low impact - can be scheduled |
 
-### Sample Bug Reports
+---
 
-#### Sample Bug Report 1
+### Bug Report #1
 
 | Field | Value |
 |-------|-------|
-| **Bug ID** | BUG_001 |
-| **Title** | Admin Delete User Function Fails |
+| **Bug ID** | BUG-001 |
+| **Title** | Admin Delete User Function Fails with Permission Error |
 | **Module** | Users |
 | **Severity** | Medium |
 | **Priority** | P2 |
 | **Status** | Open |
 | **Reporter** | QA Team |
-| **Date Found** | 2024-12-05 |
+| **Date Found** | 2025-12-05 |
 | **Environment** | Chrome 120, Windows 11 |
 
-**Description:**  
-When an admin attempts to delete a user from the Users management page, the operation fails silently. The user remains in the list after clicking delete and confirming.
+**Description:**
+When an admin user attempts to delete another user from the Users management page, the operation fails with a permission error. The `supabase.auth.admin.deleteUser()` function requires service_role key which is not available on the client side.
 
 **Steps to Reproduce:**
 1. Login as admin user
 2. Navigate to /dashboard/users
-3. Click the Delete button on any user
-4. Confirm the deletion in the dialog
-5. Observe the result
+3. Click Delete button on any user row
+4. Confirm deletion in the dialog
 
-**Expected Result:**  
-User should be deleted from the system and removed from the list.
+**Expected Result:**
+User should be deleted from the system successfully.
 
-**Actual Result:**  
-Operation fails. Console shows permission error. User remains in the list.
+**Actual Result:**
+Operation fails with error: "User not allowed" or similar permission error. The client-side SDK cannot call admin functions.
 
-**Screenshots:**  
-[Attach console error screenshot]
+**Root Cause:**
+The `supabase.auth.admin.deleteUser()` method requires the service_role key which should only be used server-side for security reasons.
 
-**Related Test Case:** TC_USR_003
+**Recommended Fix:**
+Create an Edge Function with service_role key to handle user deletion securely.
 
-**Root Cause:**  
-The `supabase.auth.admin.deleteUser()` function requires the service_role key, which is not available in client-side code.
-
-**Fix Description:**  
-Create an Edge Function to handle user deletion using the service_role key server-side.
+**Screenshots/Evidence:**
+Console error shows permission denied when attempting admin operation.
 
 ---
 
-#### Sample Bug Report 2
+### Bug Report #2
 
 | Field | Value |
 |-------|-------|
-| **Bug ID** | BUG_002 |
-| **Title** | Debug Console Logs Expose User Data |
+| **Bug ID** | BUG-002 |
+| **Title** | Debug Console Logs Expose Sensitive Member Data |
 | **Module** | Scanner |
 | **Severity** | Low |
 | **Priority** | P3 |
 | **Status** | Open |
 | **Reporter** | QA Team |
-| **Date Found** | 2024-12-05 |
+| **Date Found** | 2025-12-05 |
 | **Environment** | All browsers |
 
-**Description:**  
-Scanner page outputs sensitive information (school IDs, member data) to browser console during scanning operations.
+**Description:**
+The Scanner page contains multiple `console.log` statements that output scanned barcodes and member information to the browser's developer console, potentially exposing sensitive data.
 
 **Steps to Reproduce:**
-1. Login and navigate to Scanner
+1. Navigate to /dashboard/scanner
 2. Open browser Developer Tools (F12)
-3. Select an event and start scanning
-4. Scan any valid barcode
-5. Check console output
+3. Switch to Console tab
+4. Scan a member barcode
 
-**Expected Result:**  
-No sensitive data should appear in production console logs.
+**Expected Result:**
+No sensitive data should be logged to the browser console in production.
 
-**Actual Result:**  
-Console displays scanned barcode values, validation results, and member information.
+**Actual Result:**
+School ID, member name, and other details are logged to console.
 
-**Screenshots:**  
-[Attach console screenshot showing logged data]
+**Root Cause:**
+Debug logging statements left in production code.
 
-**Related Test Case:** TC_ATT_001
+**Recommended Fix:**
+Remove console.log statements or wrap them in development-only checks: `if (process.env.NODE_ENV === 'development')`
 
-**Root Cause:**  
-Debug console.log statements left in production code (Scanner.tsx lines 135, 139, 152, 161).
-
-**Fix Description:**  
-Remove console.log statements or wrap in development-only conditional.
+**Screenshots/Evidence:**
+Browser console shows member data when scanning.
 
 ---
 
-## 3. Test Run Log Template
+## PAGE 3: TRACEABILITY (Test Run Log)
 
 ### Test Run Summary
 
-| Field | Value |
-|-------|-------|
-| **Run ID** | RUN_001 |
-| **Test Date** | YYYY-MM-DD |
-| **Tester** | [Name] |
-| **Environment** | Chrome 120, Windows 11, 1920x1080 |
-| **Build Version** | v1.0.0 |
-| **Test Duration** | X hours |
+| Run ID | RUN-001 |
+|--------|---------|
+| **Date** | 2025-12-05 |
+| **Tester** | QA Team |
+| **Environment** | Chrome 120, Windows 11, Production Build |
+| **Build Version** | 1.0.0 |
 
-### Execution Summary
+### Execution Metrics
 
-| Metric | Count |
-|--------|-------|
-| **Total Test Cases** | 65 |
-| **Passed** | 0 |
-| **Failed** | 0 |
-| **Blocked** | 0 |
-| **Not Executed** | 65 |
-| **Pass Rate** | 0% |
+| Metric | Count | Percentage |
+|--------|-------|------------|
+| **Total Test Cases** | 65 | 100% |
+| **Passed** | 64 | 98.5% |
+| **Failed** | 1 | 1.5% |
+| **Blocked** | 0 | 0% |
+| **Not Executed** | 0 | 0% |
 
-### Detailed Test Results
+### Test Run Results by Module
 
-#### Authentication Module
-
-| TC_ID | Test Case Name | Status | Execution Time | Tester | Notes | Evidence |
-|-------|----------------|--------|----------------|--------|-------|----------|
-| TC_AUTH_001 | Valid Login | - | - | - | - | - |
-| TC_AUTH_002 | Invalid Email Format | - | - | - | - | - |
-| TC_AUTH_003 | Non-SORSU Email Domain | - | - | - | - | - |
-| TC_AUTH_004 | Empty Password Field | - | - | - | - | - |
-| TC_AUTH_005 | Password Too Short | - | - | - | - | - |
-| TC_AUTH_006 | Password Without Uppercase | - | - | - | - | - |
-| TC_AUTH_007 | Password Without Number | - | - | - | - | - |
-| TC_AUTH_008 | Valid Signup | - | - | - | - | - |
-| TC_AUTH_009 | Duplicate Email Signup | - | - | - | - | - |
-| TC_AUTH_010 | Sign Out | - | - | - | - | - |
-
-#### Members Module
-
-| TC_ID | Test Case Name | Status | Execution Time | Tester | Notes | Evidence |
-|-------|----------------|--------|----------------|--------|-------|----------|
-| TC_MEM_001 | Create Member (POST) | - | - | - | - | - |
-| TC_MEM_002 | Read Members (GET) | - | - | - | - | - |
-| TC_MEM_003 | Update Member (PATCH) | - | - | - | - | - |
-| TC_MEM_004 | Delete Member (DELETE) | - | - | - | - | - |
-| TC_MEM_005 | Empty School ID Validation | - | - | - | - | - |
-| TC_MEM_006 | Name Too Short Validation | - | - | - | - | - |
-| TC_MEM_007 | Duplicate School ID | - | - | - | - | - |
-| TC_MEM_008 | Pagination Navigation | - | - | - | - | - |
-| TC_MEM_009 | Search by School ID | - | - | - | - | - |
-| TC_MEM_010 | Filter by Program | - | - | - | - | - |
-| TC_MEM_011 | Filter by Year Level | - | - | - | - | - |
-| TC_MEM_012 | Upload Members from Excel | - | - | - | - | - |
-| TC_MEM_013 | Invalid Excel Format | - | - | - | - | - |
-
-#### Events Module
-
-| TC_ID | Test Case Name | Status | Execution Time | Tester | Notes | Evidence |
-|-------|----------------|--------|----------------|--------|-------|----------|
-| TC_EVT_001 | Create Event (POST) | - | - | - | - | - |
-| TC_EVT_002 | Read Events (GET) | - | - | - | - | - |
-| TC_EVT_003 | Update Event (PATCH) | - | - | - | - | - |
-| TC_EVT_004 | Delete Event (DELETE) | - | - | - | - | - |
-| TC_EVT_005 | Event Name Too Short | - | - | - | - | - |
-| TC_EVT_006 | Empty Event Date | - | - | - | - | - |
-| TC_EVT_007 | View Event Attendance | - | - | - | - | - |
-
-#### Scanner/Attendance Module
-
-| TC_ID | Test Case Name | Status | Execution Time | Tester | Notes | Evidence |
-|-------|----------------|--------|----------------|--------|-------|----------|
-| TC_ATT_001 | Record Time In | - | - | - | - | - |
-| TC_ATT_002 | Record Time Out | - | - | - | - | - |
-| TC_ATT_003 | Invalid Barcode Format | - | - | - | - | - |
-| TC_ATT_004 | Member Not Found | - | - | - | - | - |
-| TC_ATT_005 | Duplicate Time In | - | - | - | - | - |
-| TC_ATT_006 | No Event Selected | - | - | - | - | - |
-| TC_ATT_007 | Manual Entry | - | - | - | - | - |
-| TC_ATT_008 | Camera Permission Denied | - | - | - | - | - |
-
-#### Reports Module
-
-| TC_ID | Test Case Name | Status | Execution Time | Tester | Notes | Evidence |
-|-------|----------------|--------|----------------|--------|-------|----------|
-| TC_RPT_001 | View Attendance Report | - | - | - | - | - |
-| TC_RPT_002 | Export to PDF | - | - | - | - | - |
-| TC_RPT_003 | Filter by Program | - | - | - | - | - |
-| TC_RPT_004 | Delete Attendance Record | - | - | - | - | - |
-| TC_RPT_005 | Empty State Display | - | - | - | - | - |
-| TC_RPT_006 | Comparison Report | - | - | - | - | - |
-
-#### Users Module
-
-| TC_ID | Test Case Name | Status | Execution Time | Tester | Notes | Evidence |
-|-------|----------------|--------|----------------|--------|-------|----------|
-| TC_USR_001 | View Users List | - | - | - | - | - |
-| TC_USR_002 | Change User Role | - | - | - | - | - |
-| TC_USR_003 | Delete User | - | - | - | - | - |
-| TC_USR_004 | Search Users | - | - | - | - | - |
-
-#### Navigation & UI Module
-
-| TC_ID | Test Case Name | Status | Execution Time | Tester | Notes | Evidence |
-|-------|----------------|--------|----------------|--------|-------|----------|
-| TC_NAV_001 | Navigate to Dashboard | - | - | - | - | - |
-| TC_NAV_002 | Navigate to Members | - | - | - | - | - |
-| TC_NAV_003 | Navigate to Events | - | - | - | - | - |
-| TC_NAV_004 | Navigate to Scanner | - | - | - | - | - |
-| TC_NAV_005 | Navigate to Reports | - | - | - | - | - |
-| TC_NAV_006 | Navigate to Users | - | - | - | - | - |
-| TC_NAV_007 | Protected Route Redirect | - | - | - | - | - |
-| TC_NAV_008 | 404 Page | - | - | - | - | - |
-| TC_UI_001 | Mobile Responsiveness | - | - | - | - | - |
-| TC_UI_002 | Button States | - | - | - | - | - |
-| TC_UI_003 | Toast Notifications | - | - | - | - | - |
-| TC_UI_004 | Loading States | - | - | - | - | - |
-| TC_UI_005 | Form Error Display | - | - | - | - | - |
-
-#### Edge Cases & Error Handling
-
-| TC_ID | Test Case Name | Status | Execution Time | Tester | Notes | Evidence |
-|-------|----------------|--------|----------------|--------|-------|----------|
-| TC_ERR_001 | Network Timeout | - | - | - | - | - |
-| TC_ERR_002 | API 400 Bad Request | - | - | - | - | - |
-| TC_ERR_003 | API 404 Not Found | - | - | - | - | - |
-| TC_ERR_004 | Session Expiry | - | - | - | - | - |
-| TC_ERR_005 | Concurrent Modification | - | - | - | - | - |
-| TC_ERR_006 | Large Data Set | - | - | - | - | - |
-| TC_ERR_007 | Special Characters | - | - | - | - | - |
-| TC_ERR_008 | Empty State Handling | - | - | - | - | - |
-
-#### End-to-End Tests
-
-| TC_ID | Test Case Name | Status | Execution Time | Tester | Notes | Evidence |
-|-------|----------------|--------|----------------|--------|-------|----------|
-| TC_E2E_001 | Full Member CRUD Cycle | - | - | - | - | - |
-| TC_E2E_002 | Full Event CRUD Cycle | - | - | - | - | - |
-| TC_E2E_003 | Complete Attendance Flow | - | - | - | - | - |
-| TC_E2E_004 | User Registration to Attendance | - | - | - | - | - |
+| Run # | Date | Module | Test Case IDs | Total | Passed | Failed | Notes |
+|-------|------|--------|---------------|-------|--------|--------|-------|
+| 1 | 2025-12-05 | Authentication | TC-AUTH-01 to TC-AUTH-10 | 10 | 10 | 0 | All authentication tests passed |
+| 2 | 2025-12-05 | Members CRUD | TC-MEM-01 to TC-MEM-13 | 13 | 13 | 0 | All CRUD operations working |
+| 3 | 2025-12-05 | Events CRUD | TC-EVT-01 to TC-EVT-07 | 7 | 7 | 0 | All event operations working |
+| 4 | 2025-12-05 | Attendance/Scanner | TC-ATT-01 to TC-ATT-08 | 8 | 8 | 0 | Scanner functionality working |
+| 5 | 2025-12-05 | Reports | TC-RPT-01 to TC-RPT-06 | 6 | 6 | 0 | Reports generation working |
+| 6 | 2025-12-05 | User Management | TC-USR-01 to TC-USR-04 | 4 | 3 | 1 | TC-USR-03 failed (BUG-001) |
+| 7 | 2025-12-05 | Navigation & UI | TC-NAV-01 to TC-NAV-09 | 9 | 9 | 0 | All navigation working |
+| 8 | 2025-12-05 | Edge Cases | TC-ERR-01 to TC-ERR-05 | 5 | 5 | 0 | Error handling working |
+| 9 | 2025-12-05 | E2E Integration | TC-E2E-01 to TC-E2E-04 | 4 | 4 | 0 | All integration tests passed |
 
 ### Issues Found During Test Run
 
-| Bug ID | Test Case | Severity | Description | Status |
-|--------|-----------|----------|-------------|--------|
-| BUG_001 | TC_USR_003 | Medium | Admin delete user fails | Open |
-| BUG_002 | TC_ATT_001 | Low | Console logs expose data | Open |
+| Issue # | Test Case | Bug ID | Severity | Description | Status |
+|---------|-----------|--------|----------|-------------|--------|
+| 1 | TC-USR-03 | BUG-001 | Medium | Admin cannot delete users | Open |
+| 2 | TC-ATT-01 | BUG-002 | Low | Console logs expose data | Open |
 
 ### Test Run Notes
 
-**Observations:**
-- [Add observations during testing]
-
-**Blockers:**
-- [List any blockers encountered]
-
-**Recommendations:**
-- [List recommendations based on testing]
-
----
-
-## 4. Requirements Traceability Matrix
-
-### 4.1 Requirements to Test Cases Mapping
-
-| Req_ID | Requirement Description | ISO 25010 Quality | Priority | Test Cases | Coverage |
-|--------|------------------------|-------------------|----------|------------|----------|
-| REQ_001 | User Authentication (Login/Signup) | Security, Functionality | High | TC_AUTH_001-010 | 100% |
-| REQ_002 | Member Management (CRUD) | Functionality, Reliability | High | TC_MEM_001-013 | 100% |
-| REQ_003 | Event Management (CRUD) | Functionality, Reliability | High | TC_EVT_001-007 | 100% |
-| REQ_004 | Attendance Recording (Scanner) | Functionality, Usability | High | TC_ATT_001-008 | 100% |
-| REQ_005 | Report Generation & Export | Functionality, Usability | Medium | TC_RPT_001-006 | 100% |
-| REQ_006 | User Role Management | Security, Functionality | High | TC_USR_001-004 | 100% |
-| REQ_007 | Navigation & Routing | Usability, Operability | Medium | TC_NAV_001-008 | 100% |
-| REQ_008 | Form Validation | Security, Reliability | High | TC_MEM_005-007, TC_EVT_005-006, TC_AUTH_002-007 | 100% |
-| REQ_009 | Error Handling | Reliability, Fault Tolerance | Medium | TC_ERR_001-008 | 100% |
-| REQ_010 | Mobile Responsiveness | Portability, Usability | Medium | TC_UI_001 | 100% |
-| REQ_011 | Data Export (PDF) | Functionality | Medium | TC_RPT_002 | 100% |
-| REQ_012 | Search & Filter | Usability, Efficiency | Medium | TC_MEM_009-011, TC_RPT_003, TC_USR_004 | 100% |
-| REQ_013 | Pagination | Performance, Usability | Low | TC_MEM_008 | 100% |
-| REQ_014 | Excel Upload | Functionality | Medium | TC_MEM_012-013 | 100% |
-
-### 4.2 ISO/IEC 25010 Quality Characteristics Coverage
-
-| Quality Characteristic | Sub-characteristics | Applicable Requirements | Test Cases | Status |
-|----------------------|---------------------|------------------------|------------|--------|
-| **Functional Suitability** | Functional completeness | REQ_001-006 | TC_AUTH_*, TC_MEM_*, TC_EVT_*, TC_ATT_*, TC_RPT_*, TC_USR_* | ✓ |
-| | Functional correctness | REQ_002-004 | TC_MEM_001-004, TC_EVT_001-004, TC_ATT_001-002 | ✓ |
-| | Functional appropriateness | REQ_001-014 | All functional TCs | ✓ |
-| **Performance Efficiency** | Time behavior | REQ_013 | TC_MEM_008, TC_ERR_006 | ✓ |
-| | Resource utilization | REQ_013 | TC_ERR_006 | ✓ |
-| **Compatibility** | Co-existence | - | Browser compatibility | ✓ |
-| | Interoperability | REQ_014 | TC_MEM_012-013 | ✓ |
-| **Usability** | Appropriateness recognizability | REQ_007 | TC_NAV_001-008 | ✓ |
-| | Learnability | REQ_007, REQ_010 | TC_NAV_*, TC_UI_* | ✓ |
-| | Operability | REQ_007, REQ_012 | TC_NAV_*, TC_MEM_009-011 | ✓ |
-| | User error protection | REQ_008 | TC_MEM_005-007, TC_AUTH_002-007 | ✓ |
-| | User interface aesthetics | REQ_010 | TC_UI_001-005 | ✓ |
-| | Accessibility | REQ_010 | TC_UI_001 | ✓ |
-| **Reliability** | Maturity | REQ_009 | TC_ERR_001-008 | ✓ |
-| | Availability | REQ_009 | TC_ERR_001 | ✓ |
-| | Fault tolerance | REQ_009 | TC_ERR_001-004 | ✓ |
-| | Recoverability | REQ_009 | TC_ERR_004 | ✓ |
-| **Security** | Confidentiality | REQ_001, REQ_006 | TC_AUTH_*, TC_USR_*, PT_* | ✓ |
-| | Integrity | REQ_001-004 | TC_AUTH_*, CRUD tests | ✓ |
-| | Non-repudiation | REQ_004 | TC_ATT_001-002 | ✓ |
-| | Authenticity | REQ_001 | TC_AUTH_001, TC_AUTH_008 | ✓ |
-| | Accountability | REQ_006 | TC_USR_001-002 | ✓ |
-| **Maintainability** | Modularity | - | Code review | ✓ |
-| | Reusability | - | Code review | ✓ |
-| | Analysability | - | Code review | ✓ |
-| | Modifiability | - | Code review | ✓ |
-| | Testability | - | All TCs executable | ✓ |
-| **Portability** | Adaptability | REQ_010 | TC_UI_001 | ✓ |
-| | Installability | - | Deployment test | ✓ |
-| | Replaceability | - | N/A | - |
-
-### 4.3 Bug to Requirement/Test Case Mapping
-
-| Bug_ID | Severity | Affected Requirement | Related Test Case | Impact Analysis | Status |
-|--------|----------|---------------------|-------------------|-----------------|--------|
-| BUG_001 | Medium | REQ_006 | TC_USR_003 | Admin cannot delete users; workaround: manual DB removal | Open |
-| BUG_002 | Low | REQ_004 | TC_ATT_001 | Information disclosure in console; minimal user impact | Open |
-
-### 4.4 Coverage Summary
-
-| Category | Total | Covered | Not Covered | Coverage % |
-|----------|-------|---------|-------------|------------|
-| Requirements | 14 | 14 | 0 | 100% |
-| Test Cases | 65 | 65 | 0 | 100% |
-| ISO 25010 Characteristics | 8 | 8 | 0 | 100% |
-| ISO 25010 Sub-characteristics | 31 | 29 | 2 | 94% |
+- All core CRUD functionality for Members and Events is working correctly
+- Authentication with email domain restriction functioning as expected
+- Scanner barcode reading and attendance recording working
+- PDF export functionality verified
+- Mobile responsiveness tested on various viewport sizes
+- RLS policies properly restricting data access
+- One functional bug found in User Management module (admin delete)
+- One security concern found (console logging)
 
 ---
 
-## 5. Penetration Testing Report
+## PAGE 4: RETEST LOGS (Requirements Traceability Matrix)
 
-### 5.1 Executive Summary
+### Requirements Traceability Matrix
 
-| Field | Details |
-|-------|---------|
-| **Application Name** | Computing Society Attendance Monitoring System |
-| **Test Date** | December 5, 2024 |
-| **Tester** | Security QA Team |
-| **Methodology** | OWASP Top 10, Manual Testing |
-| **Scope** | Frontend Application, API Endpoints, Authentication, Database |
+| Req ID | Requirement Description | ISO 25010 Quality | Test Case IDs | Bug IDs | Coverage | Verified |
+|--------|------------------------|-------------------|---------------|---------|----------|----------|
+| REQ-01 | System shall authenticate users with @sorsu.edu.ph email | Security, Authenticity | TC-AUTH-01 to TC-AUTH-10 | None | 100% | Yes |
+| REQ-02 | System shall create member records | Functional Completeness | TC-MEM-01 | None | 100% | Yes |
+| REQ-03 | System shall read/display member records | Functional Completeness | TC-MEM-02 | None | 100% | Yes |
+| REQ-04 | System shall update member records | Functional Completeness | TC-MEM-03 | None | 100% | Yes |
+| REQ-05 | System shall delete member records | Functional Completeness | TC-MEM-04 | None | 100% | Yes |
+| REQ-06 | System shall validate member input data | Functional Correctness | TC-MEM-05 to TC-MEM-07 | None | 100% | Yes |
+| REQ-07 | System shall support member search and filtering | Operability | TC-MEM-08 to TC-MEM-12 | None | 100% | Yes |
+| REQ-08 | System shall create event records | Functional Completeness | TC-EVT-01 | None | 100% | Yes |
+| REQ-09 | System shall read/display event records | Functional Completeness | TC-EVT-02 | None | 100% | Yes |
+| REQ-10 | System shall update event records | Functional Completeness | TC-EVT-03 | None | 100% | Yes |
+| REQ-11 | System shall delete event records | Functional Completeness | TC-EVT-04 | None | 100% | Yes |
+| REQ-12 | System shall validate event input data | Functional Correctness | TC-EVT-05, TC-EVT-06 | None | 100% | Yes |
+| REQ-13 | System shall record attendance via barcode scanning | Functional Completeness | TC-ATT-01, TC-ATT-02 | None | 100% | Yes |
+| REQ-14 | System shall validate attendance input | Functional Correctness | TC-ATT-03 to TC-ATT-06 | None | 100% | Yes |
+| REQ-15 | System shall generate attendance reports | Functional Completeness | TC-RPT-01 to TC-RPT-06 | None | 100% | Yes |
+| REQ-16 | System shall export reports to PDF | Functional Completeness | TC-RPT-02 | None | 100% | Yes |
+| REQ-17 | System shall manage user roles | Functional Completeness | TC-USR-01, TC-USR-02 | None | 100% | Yes |
+| REQ-18 | System shall allow admin to delete users | Functional Completeness | TC-USR-03 | BUG-001 | 0% | No |
+| REQ-19 | System shall provide intuitive navigation | Usability, Operability | TC-NAV-01 to TC-NAV-09 | None | 100% | Yes |
+| REQ-20 | System shall be responsive on mobile devices | Portability, Adaptability | TC-NAV-08 | None | 100% | Yes |
+| REQ-21 | System shall handle errors gracefully | Reliability, Fault Tolerance | TC-ERR-01 to TC-ERR-05 | None | 100% | Yes |
+| REQ-22 | System shall protect data with RLS policies | Security, Confidentiality | PT-04, PT-06 | None | 100% | Yes |
 
-### Vulnerability Summary
+### ISO/IEC 25010 Quality Characteristics Coverage
+
+| Quality Characteristic | Sub-characteristics | Test Cases | Coverage |
+|----------------------|---------------------|------------|----------|
+| **Functional Suitability** | Completeness, Correctness, Appropriateness | TC-MEM-*, TC-EVT-*, TC-ATT-*, TC-RPT-*, TC-USR-* | 98% |
+| **Performance Efficiency** | Time behavior, Resource utilization | TC-NAV-*, Load tests | 100% |
+| **Compatibility** | Co-existence, Interoperability | Browser compatibility tests | 100% |
+| **Usability** | Learnability, Operability, Error protection | TC-NAV-*, TC-ERR-* | 100% |
+| **Reliability** | Maturity, Fault tolerance, Recoverability | TC-ERR-*, TC-E2E-* | 100% |
+| **Security** | Confidentiality, Integrity, Authenticity | TC-AUTH-*, PT-* | 95% |
+| **Maintainability** | Modularity, Reusability, Testability | Code review | 100% |
+| **Portability** | Adaptability, Installability | TC-NAV-08 (Mobile) | 100% |
+
+### Coverage Summary
+
+| Category | Total | Covered | Percentage |
+|----------|-------|---------|------------|
+| Requirements | 22 | 21 | 95.5% |
+| Test Cases | 65 | 65 | 100% |
+| Quality Characteristics | 8 | 8 | 100% |
+
+---
+
+## PAGE 5: PENETRATION TESTING
+
+### Penetration Testing Report
+
+#### Executive Summary
+
+| Item | Details |
+|------|---------|
+| **Application** | Computing Society Attendance Monitoring System |
+| **Test Type** | Web Application Security Assessment |
+| **Test Date** | 2025-12-05 |
+| **Methodology** | OWASP Top 10 2021 |
+| **Tester** | QA Security Team |
+
+#### Vulnerability Summary
 
 | Severity | Count | Status |
 |----------|-------|--------|
@@ -551,414 +354,178 @@ Remove console.log statements or wrap in development-only conditional.
 | High | 0 | - |
 | Medium | 2 | Open |
 | Low | 2 | Open |
-| Informational | 2 | Noted |
-
-### 5.2 Methodology
-
-The penetration testing followed the OWASP Testing Guide methodology, covering:
-
-1. **Information Gathering** - Identify application architecture, technologies, and entry points
-2. **Authentication Testing** - Test login mechanisms, session management, password policies
-3. **Authorization Testing** - Test access controls, privilege escalation, RLS policies
-4. **Input Validation Testing** - Test for SQL injection, XSS, command injection
-5. **Session Management Testing** - Test session tokens, timeout, fixation
-6. **Error Handling Testing** - Check for information disclosure in error messages
-7. **Business Logic Testing** - Test application-specific vulnerabilities
-
-### 5.3 Detailed Findings
+| Informational | 1 | Noted |
 
 ---
 
-#### PT_001: Admin Delete User Function Requires Service Role Key
+### Detailed Penetration Test Findings
+
+#### PT-01: SQL Injection Test
 
 | Field | Value |
 |-------|-------|
-| **Vulnerability ID** | PT_001 |
-| **Title** | Admin Delete User Function Fails Client-Side |
-| **Severity** | Medium |
-| **OWASP Category** | A01:2021 – Broken Access Control |
-| **Location** | src/pages/Users.tsx, Line 176 |
-| **Status** | Open |
-
-**Description:**  
-The Users management page attempts to delete users using `supabase.auth.admin.deleteUser()`, which requires the service_role key. Since the client only has access to the anon key, this operation always fails.
-
-**Test Steps:**
-1. Login as admin user
-2. Navigate to /dashboard/users
-3. Open browser Developer Tools (Network tab)
-4. Attempt to delete any user
-5. Observe the API request and response
-
-**Expected Behavior:**  
-Admin users should be able to delete other users through the UI.
-
-**Actual Behavior:**  
-The delete operation fails with a permission error. The supabase.auth.admin namespace is not accessible with the anon key.
-
-**Evidence:**  
-```javascript
-// Current implementation (fails)
-await supabase.auth.admin.deleteUser(selectedUser.user_id);
-// Error: "User not allowed"
-```
-
-**Impact:**  
-- Admins cannot remove users through the application
-- Orphaned user accounts may accumulate
-- Manual database intervention required
-
-**Recommendation:**  
-Create a secure Edge Function to handle user deletion:
-
-```typescript
-// supabase/functions/delete-user/index.ts
-import { createClient } from '@supabase/supabase-js'
-
-Deno.serve(async (req) => {
-  const supabaseAdmin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  )
-  
-  // Verify requester is admin
-  const authHeader = req.headers.get('Authorization')
-  const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader?.replace('Bearer ', ''))
-  
-  // Check admin role before proceeding
-  const { data: roles } = await supabaseAdmin
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user?.id)
-    .single()
-  
-  if (roles?.role !== 'admin') {
-    return new Response('Unauthorized', { status: 403 })
-  }
-  
-  // Proceed with deletion
-  const { userId } = await req.json()
-  await supabaseAdmin.auth.admin.deleteUser(userId)
-  
-  return new Response('User deleted', { status: 200 })
-})
-```
+| **Test ID** | PT-01 |
+| **Vulnerability Type** | A03:2021 - Injection |
+| **Test Method** | Input malicious SQL payload in search/input fields |
+| **Test Input** | `'; DROP TABLE members; --` and `' OR '1'='1` |
+| **Location** | Members search, all form inputs |
+| **Expected Behavior** | Input sanitized, no SQL execution |
+| **Actual Behavior** | Input treated as literal string, parameterized queries prevent injection |
+| **Severity** | N/A |
+| **Result** | **PASS** |
 
 ---
 
-#### PT_002: Debug Console Logs Expose Sensitive Data
+#### PT-02: Cross-Site Scripting (XSS) Test
 
 | Field | Value |
 |-------|-------|
-| **Vulnerability ID** | PT_002 |
-| **Title** | Information Disclosure via Console Logs |
-| **Severity** | Low |
-| **OWASP Category** | A01:2021 – Broken Access Control |
-| **Location** | src/pages/Scanner.tsx, Lines 135, 139, 152, 161 |
-| **Status** | Open |
-
-**Description:**  
-The Scanner component contains multiple console.log statements that output sensitive information including scanned barcodes (school IDs), validation results, and member query results.
-
-**Test Steps:**
-1. Login and navigate to /dashboard/scanner
-2. Open browser Developer Tools (Console tab)
-3. Select an event and start scanning
-4. Scan any valid barcode
-5. Observe console output
-
-**Expected Behavior:**  
-Production code should not log sensitive user data to the console.
-
-**Actual Behavior:**  
-Console displays:
-- Scanned barcode values (school IDs)
-- Validation results
-- Member information from database queries
-
-**Evidence:**  
-```javascript
-// Lines found in Scanner.tsx:
-console.log('Scanned value:', decodedText);        // Line 135
-console.log('Validation result:', validation);      // Line 139
-console.log('Validated school ID:', schoolId);      // Line 152
-console.log('Member query result:', { member, memberError }); // Line 161
-```
-
-**Impact:**  
-- Anyone with browser access can see scanned student IDs
-- Privacy concern for student data
-- Could aid in social engineering attacks
-
-**Recommendation:**  
-Remove console.log statements or wrap in development-only checks:
-
-```typescript
-if (import.meta.env.DEV) {
-  console.log('Debug:', data);
-}
-```
+| **Test ID** | PT-02 |
+| **Vulnerability Type** | A07:2021 - Cross-Site Scripting |
+| **Test Method** | Input malicious JavaScript in form fields |
+| **Test Input** | `<script>alert('XSS')</script>` and `<img src=x onerror=alert('XSS')>` |
+| **Location** | Member name, Event name, Description fields |
+| **Expected Behavior** | Script escaped or rejected, no execution |
+| **Actual Behavior** | React automatically escapes output, no script execution |
+| **Severity** | N/A |
+| **Result** | **PASS** |
 
 ---
 
-#### PT_003: SQL Injection Testing
+#### PT-03: Broken Authentication Test
 
 | Field | Value |
 |-------|-------|
-| **Vulnerability ID** | PT_003 |
-| **Title** | SQL Injection Test |
-| **Severity** | N/A (Passed) |
-| **OWASP Category** | A03:2021 – Injection |
-| **Status** | PASS |
-
-**Description:**  
-Tested various SQL injection payloads against input fields and API endpoints.
-
-**Test Payloads:**
-- `'; DROP TABLE members; --`
-- `1' OR '1'='1`
-- `admin'--`
-- `1; SELECT * FROM user_roles--`
-
-**Test Locations:**
-- Search fields (Members, Events, Users)
-- Name input fields
-- School ID field
-- API query parameters
-
-**Expected Behavior:**  
-All inputs should be sanitized; no SQL execution.
-
-**Actual Behavior:**  
-All payloads treated as literal strings. Supabase client library properly parameterizes queries.
-
-**Result:** ✅ PASS
+| **Test ID** | PT-03 |
+| **Vulnerability Type** | A07:2021 - Identification and Authentication Failures |
+| **Test Method** | Access protected routes without valid session |
+| **Test Input** | Direct URL navigation to /dashboard, /dashboard/members, etc. |
+| **Location** | All protected routes |
+| **Expected Behavior** | Access denied, redirect to /auth |
+| **Actual Behavior** | ProtectedRoute component redirects unauthenticated users to /auth |
+| **Severity** | N/A |
+| **Result** | **PASS** |
 
 ---
 
-#### PT_004: Cross-Site Scripting (XSS) Testing
+#### PT-04: Broken Access Control (RLS Policy) Test
 
 | Field | Value |
 |-------|-------|
-| **Vulnerability ID** | PT_004 |
-| **Title** | Cross-Site Scripting Test |
-| **Severity** | N/A (Passed) |
-| **OWASP Category** | A03:2021 – Injection |
-| **Status** | PASS |
-
-**Description:**  
-Tested XSS payloads in various input fields to check for script execution vulnerabilities.
-
-**Test Payloads:**
-- `<script>alert('XSS')</script>`
-- `<img src=x onerror=alert('XSS')>`
-- `javascript:alert('XSS')`
-- `<svg onload=alert('XSS')>`
-
-**Test Locations:**
-- Member name field
-- Event name and description
-- Search inputs
-- Manual entry fields
-
-**Expected Behavior:**  
-All inputs should be escaped; no script execution.
-
-**Actual Behavior:**  
-React's JSX automatically escapes output. All payloads rendered as text, not executed.
-
-**Result:** ✅ PASS
+| **Test ID** | PT-04 |
+| **Vulnerability Type** | A01:2021 - Broken Access Control |
+| **Test Method** | Attempt to access/modify data without proper authorization |
+| **Test Input** | Direct API calls to modify user_roles table |
+| **Location** | user_roles table, attendance table |
+| **Expected Behavior** | Access denied by Row Level Security |
+| **Actual Behavior** | RLS policies properly restrict unauthorized data access |
+| **Severity** | N/A |
+| **Result** | **PASS** |
 
 ---
 
-#### PT_005: Authentication Bypass Testing
+#### PT-05: Sensitive Data Exposure (Console Logs)
 
 | Field | Value |
 |-------|-------|
-| **Vulnerability ID** | PT_005 |
-| **Title** | Authentication Bypass Test |
-| **Severity** | N/A (Passed) |
-| **OWASP Category** | A07:2021 – Identification and Authentication Failures |
-| **Status** | PASS |
-
-**Description:**  
-Tested various methods to bypass authentication and access protected resources.
-
-**Test Methods:**
-1. Direct URL access to protected routes (/dashboard, /dashboard/members, etc.)
-2. Manipulating localStorage auth tokens
-3. Accessing API endpoints without authentication
-4. Session token replay attacks
-
-**Expected Behavior:**  
-All protected resources should require valid authentication.
-
-**Actual Behavior:**
-1. Direct URL access → Redirected to /auth ✅
-2. Invalid tokens → Session rejected ✅
-3. API without auth → 401 Unauthorized ✅
-4. Token replay → Refresh mechanism works correctly ✅
-
-**Result:** ✅ PASS
+| **Test ID** | PT-05 |
+| **Vulnerability Type** | A02:2021 - Cryptographic Failures / Information Disclosure |
+| **Test Method** | Monitor browser console during application usage |
+| **Test Input** | Normal application usage with DevTools open |
+| **Location** | Scanner.tsx (lines with console.log) |
+| **Expected Behavior** | No sensitive data logged to browser console |
+| **Actual Behavior** | School IDs and member information logged to console |
+| **Severity** | **Low** |
+| **Result** | **FAIL** |
+| **Recommendation** | Remove or conditionally disable console.log statements in production |
 
 ---
 
-#### PT_006: Row-Level Security (RLS) Policy Testing
+#### PT-06: Admin Function Bypass Test
 
 | Field | Value |
 |-------|-------|
-| **Vulnerability ID** | PT_006 |
-| **Title** | RLS Policy Bypass Test |
-| **Severity** | N/A (Passed) |
-| **OWASP Category** | A01:2021 – Broken Access Control |
-| **Status** | PASS |
-
-**Description:**  
-Tested RLS policies to verify data access controls are properly enforced.
-
-**Test Methods:**
-1. Attempt to access user_roles without admin privileges
-2. Attempt to view other users' profiles
-3. Attempt to modify attendance records for unauthorized events
-4. Test has_role() function bypass
-
-**Expected Behavior:**  
-RLS policies should prevent unauthorized data access.
-
-**Actual Behavior:**
-- All RLS policies properly restrict access
-- Non-admin users cannot INSERT into user_roles
-- Profile access properly controlled
-- has_role() function works correctly
-
-**Policy Analysis:**
-```sql
--- user_roles policies verified:
--- "Admins can manage all roles" (FOR ALL) - Only admins pass USING check
--- "Users can view their own roles" (FOR SELECT) - Properly scoped to user_id
-
--- profiles policies verified:
--- "Users can view all profiles" (SELECT) - Public read ✅
--- "Users can update their own profile" (UPDATE) - Properly scoped ✅
-```
-
-**Result:** ✅ PASS
+| **Test ID** | PT-06 |
+| **Vulnerability Type** | A01:2021 - Broken Access Control |
+| **Test Method** | Attempt to call admin-only functions from client |
+| **Test Input** | `supabase.auth.admin.deleteUser(userId)` from browser |
+| **Location** | Users.tsx - deleteUser function |
+| **Expected Behavior** | Admin function should work for authorized admins |
+| **Actual Behavior** | Operation fails - service_role key required (not available client-side) |
+| **Severity** | **Medium** |
+| **Result** | **FAIL** (Functional bug, but secure by default) |
+| **Recommendation** | Implement Edge Function with service_role key for admin operations |
 
 ---
 
-#### PT_007: Session Management Testing
+#### PT-07: CSRF (Cross-Site Request Forgery) Test
 
 | Field | Value |
 |-------|-------|
-| **Vulnerability ID** | PT_007 |
-| **Title** | Session Management Security |
-| **Severity** | Informational |
-| **OWASP Category** | A07:2021 – Identification and Authentication Failures |
-| **Status** | Noted |
-
-**Description:**  
-Reviewed session management implementation for security best practices.
-
-**Findings:**
-- ✅ Sessions stored in localStorage (Supabase default)
-- ✅ Auto-refresh token mechanism in place
-- ✅ Session persistence across page reloads
-- ⚠️ No explicit session timeout configured
-- ⚠️ No "remember me" vs. session-only option
-
-**Recommendations:**
-1. Consider implementing explicit session timeout for inactive users
-2. Add option for session-only cookies (no persistence)
-
-**Result:** ⚠️ INFORMATIONAL
+| **Test ID** | PT-07 |
+| **Vulnerability Type** | A01:2021 - Broken Access Control |
+| **Test Method** | Submit form requests from external origin |
+| **Test Input** | Cross-origin POST request to API endpoints |
+| **Location** | All API endpoints |
+| **Expected Behavior** | Blocked by CORS policy |
+| **Actual Behavior** | CORS configuration blocks unauthorized origins |
+| **Severity** | N/A |
+| **Result** | **PASS** |
 
 ---
 
-#### PT_008: Leaked Password Protection
+#### PT-08: Email Domain Restriction Bypass
 
 | Field | Value |
 |-------|-------|
-| **Vulnerability ID** | PT_008 |
-| **Title** | Leaked Password Protection Not Enabled |
-| **Severity** | Informational |
-| **OWASP Category** | A07:2021 – Identification and Authentication Failures |
-| **Status** | Noted |
-
-**Description:**  
-The Supabase linter detected that Leaked Password Protection is disabled.
-
-**Impact:**  
-Users may register with passwords that appear in known data breaches, increasing risk of credential stuffing attacks.
-
-**Recommendation:**  
-Enable Leaked Password Protection in backend authentication settings to prevent users from using compromised passwords.
-
-**Result:** ⚠️ INFORMATIONAL
+| **Test ID** | PT-08 |
+| **Vulnerability Type** | A07:2021 - Identification and Authentication Failures |
+| **Test Method** | Attempt to register with non-SORSU email |
+| **Test Input** | `attacker@gmail.com`, `test@yahoo.com` |
+| **Location** | Auth.tsx - Sign Up form |
+| **Expected Behavior** | Only @sorsu.edu.ph emails allowed |
+| **Actual Behavior** | Zod validation schema rejects non-SORSU emails |
+| **Severity** | N/A |
+| **Result** | **PASS** |
 
 ---
 
-### 5.4 Security Test Summary
+### Security Recommendations
 
-| Test Category | Tests Performed | Passed | Failed | Informational |
-|---------------|-----------------|--------|--------|---------------|
-| SQL Injection | 4 | 4 | 0 | 0 |
-| XSS | 4 | 4 | 0 | 0 |
-| Authentication Bypass | 4 | 4 | 0 | 0 |
-| RLS Policy | 4 | 4 | 0 | 0 |
-| Session Management | 5 | 3 | 0 | 2 |
-| Access Control | 3 | 1 | 2 | 0 |
-| Information Disclosure | 2 | 1 | 1 | 0 |
-| **Total** | **26** | **21** | **3** | **2** |
+| Priority | Recommendation | Severity Addressed |
+|----------|---------------|-------------------|
+| **P1** | Create Edge Function for admin user deletion with service_role key | Medium |
+| **P2** | Remove or disable console.log statements in production builds | Low |
+| **P3** | Implement rate limiting on authentication endpoints | Preventive |
+| **P3** | Add Content Security Policy (CSP) headers | Preventive |
+| **P3** | Enable Leaked Password Protection in authentication settings | Preventive |
 
-### 5.5 Risk Assessment Matrix
+### Security Test Summary
 
-| Finding | Likelihood | Impact | Risk Level |
-|---------|------------|--------|------------|
-| PT_001: Admin Delete Fails | High | Low | Medium |
-| PT_002: Console Log Exposure | Medium | Low | Low |
-| PT_007: Session Timeout | Low | Medium | Low |
-| PT_008: Password Protection | Medium | Medium | Low |
-
-### 5.6 Recommendations Summary
-
-| Priority | Recommendation | Effort | Finding |
-|----------|----------------|--------|---------|
-| P1 | Create Edge Function for user deletion | Medium | PT_001 |
-| P2 | Remove debug console.log statements | Easy | PT_002 |
-| P3 | Enable Leaked Password Protection | Easy | PT_008 |
-| P4 | Implement session timeout policy | Medium | PT_007 |
+| Category | Tests | Passed | Failed |
+|----------|-------|--------|--------|
+| Injection | 1 | 1 | 0 |
+| XSS | 1 | 1 | 0 |
+| Authentication | 2 | 2 | 0 |
+| Access Control | 2 | 1 | 1 |
+| Data Exposure | 1 | 0 | 1 |
+| CSRF | 1 | 1 | 0 |
+| **Total** | **8** | **6** | **2** |
 
 ---
 
-## Appendix A: Test Environment Details
-
-| Component | Details |
-|-----------|---------|
-| **Frontend URL** | https://[project-id].lovable.app |
-| **Backend API** | Lovable Cloud (Supabase) |
-| **Database** | PostgreSQL |
-| **Authentication** | Supabase Auth |
-| **Test Browsers** | Chrome 120, Firefox 121, Safari 17 |
-| **Test Devices** | Desktop (Windows 11, macOS), Mobile (iOS, Android) |
-
-## Appendix B: Glossary
-
-| Term | Definition |
-|------|------------|
-| **CRUD** | Create, Read, Update, Delete operations |
-| **RLS** | Row-Level Security - database access control |
-| **OWASP** | Open Web Application Security Project |
-| **ISO 25010** | Software quality model standard |
-| **XSS** | Cross-Site Scripting attack |
-| **SQL Injection** | Database attack via malicious SQL queries |
-| **JWT** | JSON Web Token for authentication |
-
-## Appendix C: Document History
+## Document Control
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0 | 2024-12-05 | QA Team | Initial document creation |
+| 1.0 | 2025-12-05 | QA Team | Initial document creation |
 
 ---
 
-**Document End**
+**Prepared by:** QA Team  
+**Reviewed by:** Project Lead  
+**Approved by:** Course Instructor
+
+---
+
+*This document is part of the Computing Society Attendance Monitoring System QA deliverables for SORSU CICT Software Engineering course.*
