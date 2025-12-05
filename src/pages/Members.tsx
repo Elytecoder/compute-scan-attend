@@ -8,10 +8,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, User, Pencil, Trash2, Search } from "lucide-react";
 import { z } from "zod";
+
+// Import API service for HTTP requests using fetch()
+import { getMembers, createMember, updateMember, deleteMember, Member, MemberInput } from "@/api/members";
 
 // Validation schema for members
 const memberSchema = z.object({
@@ -30,12 +32,12 @@ const memberSchema = z.object({
 });
 
 const Members = () => {
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<any>(null);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [memberToDelete, setMemberToDelete] = useState<any>(null);
+  const [memberToDelete, setMemberToDelete] = useState<Member | null>(null);
   const [searchSchoolId, setSearchSchoolId] = useState("");
   const [searchName, setSearchName] = useState("");
   const [filterProgram, setFilterProgram] = useState<string>("all");
@@ -61,21 +63,26 @@ const Members = () => {
     fetchMembers();
   }, []);
 
+  /**
+   * Fetch all members using GET request
+   * Uses fetch() API to call: GET /members?select=*&order=name.asc
+   */
   const fetchMembers = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("members")
-      .select("*")
-      .order("name", { ascending: true });
-
-    if (error) {
+    try {
+      // GET request using fetch() - see src/api/members.ts
+      const data = await getMembers();
+      setMembers(data);
+    } catch (error) {
       toast.error("Failed to load members");
-    } else {
-      setMembers(data || []);
     }
     setLoading(false);
   };
 
+  /**
+   * Handle form submission for creating or updating a member
+   * Uses POST for create, PATCH for update
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -87,58 +94,40 @@ const Members = () => {
       return;
     }
 
-    if (editingMember) {
-      const { error } = await supabase
-        .from("members")
-        .update({
-          school_id: validation.data.school_id,
-          name: validation.data.name,
-          program: validation.data.program,
-          block: validation.data.block,
-          year_level: parseInt(validation.data.year_level),
-        })
-        .eq("id", editingMember.id);
+    const memberData: MemberInput = {
+      school_id: validation.data.school_id,
+      name: validation.data.name,
+      program: validation.data.program,
+      block: validation.data.block,
+      year_level: parseInt(validation.data.year_level),
+    };
 
-      if (error) {
-        if (error.code === "23505") {
-          toast.error("A member with this school ID already exists");
-        } else {
-          toast.error("Failed to update member. Please try again.");
-        }
-      } else {
+    try {
+      if (editingMember) {
+        // PATCH request using fetch() - see src/api/members.ts
+        // Endpoint: PATCH /members?id=eq.{id}
+        await updateMember(editingMember.id, memberData);
         toast.success("Member updated successfully");
-        setDialogOpen(false);
-        setEditingMember(null);
-        setFormData({ school_id: "", name: "", program: "", block: "", year_level: "" });
-        fetchMembers();
-      }
-    } else {
-      const memberData = {
-        school_id: validation.data.school_id,
-        name: validation.data.name,
-        program: validation.data.program,
-        block: validation.data.block,
-        year_level: parseInt(validation.data.year_level),
-      };
-      
-      const { error } = await supabase.from("members").insert([memberData]);
-
-      if (error) {
-        if (error.code === "23505") {
-          toast.error("A member with this school ID already exists");
-        } else {
-          toast.error("Failed to add member. Please try again.");
-        }
       } else {
+        // POST request using fetch() - see src/api/members.ts
+        // Endpoint: POST /members
+        await createMember(memberData);
         toast.success("Member added successfully");
-        setDialogOpen(false);
-        setFormData({ school_id: "", name: "", program: "", block: "", year_level: "" });
-        fetchMembers();
+      }
+      setDialogOpen(false);
+      setEditingMember(null);
+      setFormData({ school_id: "", name: "", program: "", block: "", year_level: "" });
+      fetchMembers();
+    } catch (error: any) {
+      if (error.message?.includes("23505") || error.message?.includes("duplicate")) {
+        toast.error("A member with this school ID already exists");
+      } else {
+        toast.error(editingMember ? "Failed to update member. Please try again." : "Failed to add member. Please try again.");
       }
     }
   };
 
-  const handleEdit = (member: any) => {
+  const handleEdit = (member: Member) => {
     setEditingMember(member);
     setFormData({
       school_id: member.school_id,
@@ -150,25 +139,26 @@ const Members = () => {
     setDialogOpen(true);
   };
 
+  /**
+   * Delete a member using DELETE request
+   * Endpoint: DELETE /members?id=eq.{id}
+   */
   const handleDelete = async () => {
     if (!memberToDelete) return;
 
-    const { error } = await supabase
-      .from("members")
-      .delete()
-      .eq("id", memberToDelete.id);
-
-    if (error) {
-      toast.error("Failed to delete member. Please try again.");
-    } else {
+    try {
+      // DELETE request using fetch() - see src/api/members.ts
+      await deleteMember(memberToDelete.id);
       toast.success("Member deleted successfully");
       setDeleteDialogOpen(false);
       setMemberToDelete(null);
       fetchMembers();
+    } catch (error) {
+      toast.error("Failed to delete member. Please try again.");
     }
   };
 
-  const openDeleteDialog = (member: any) => {
+  const openDeleteDialog = (member: Member) => {
     setMemberToDelete(member);
     setDeleteDialogOpen(true);
   };
@@ -178,26 +168,26 @@ const Members = () => {
     const currentYear = 2025;
     
     try {
-      // Fetch all members
-      const { data: allMembers, error: fetchError } = await supabase
-        .from("members")
-        .select("*");
-
-      if (fetchError) throw fetchError;
+      // Fetch all members using GET request
+      const allMembers = await getMembers();
 
       // Calculate correct year levels based on school IDs
-      const updates = allMembers?.map((member) => {
+      const updates = allMembers.map((member) => {
         const schoolId = member.school_id;
         const enrollmentYear = parseInt(schoolId.substring(0, 2));
         const fullEnrollmentYear = 2000 + enrollmentYear;
         const calculatedYearLevel = currentYear - fullEnrollmentYear + 1;
         const yearLevel = Math.min(4, Math.max(1, calculatedYearLevel));
 
-        return supabase
-          .from("members")
-          .update({ year_level: yearLevel })
-          .eq("id", member.id);
-      }) || [];
+        // PATCH request for each member
+        return updateMember(member.id, {
+          school_id: member.school_id,
+          name: member.name,
+          program: member.program,
+          block: member.block,
+          year_level: yearLevel,
+        });
+      });
 
       // Execute all updates
       await Promise.all(updates);
@@ -452,10 +442,12 @@ const Members = () => {
                       </div>
                     </TableCell>
                     <TableCell>{member.program}</TableCell>
-                    <TableCell>{member.year_level ? `${member.year_level}${member.year_level === 1 ? 'st' : member.year_level === 2 ? 'nd' : member.year_level === 3 ? 'rd' : 'th'} Year` : '-'}</TableCell>
-                    <TableCell>{member.block}</TableCell>
+                    <TableCell>{member.year_level}</TableCell>
+                    <TableCell>{member.block || "-"}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(member.created_at).toLocaleDateString()}
+                      {member.created_at
+                        ? new Date(member.created_at).toLocaleDateString()
+                        : "-"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -480,50 +472,57 @@ const Members = () => {
               </TableBody>
             </Table>
           )}
-          {filteredMembers.length > 0 && totalPages > 1 && (
+
+          {/* Pagination */}
+          {totalPages > 1 && (
             <div className="mt-4">
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                    if (
-                      page === 1 ||
-                      page === totalPages ||
-                      (page >= currentPage - 1 && page <= currentPage + 1)
-                    ) {
-                      return (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            onClick={() => setCurrentPage(page)}
-                            isActive={currentPage === page}
-                            className="cursor-pointer"
-                          >
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    } else if (page === currentPage - 2 || page === currentPage + 2) {
-                      return (
-                        <PaginationItem key={page}>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                      );
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
                     }
-                    return null;
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(pageNum)}
+                          isActive={currentPage === pageNum}
+                          className="cursor-pointer"
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
                   })}
+                  {totalPages > 5 && currentPage < totalPages - 2 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
                   <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    <PaginationNext
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
+              <p className="text-center text-sm text-muted-foreground mt-2">
+                Showing {startIndex + 1}-{Math.min(endIndex, filteredMembers.length)} of {filteredMembers.length} members
+              </p>
             </div>
           )}
         </CardContent>
@@ -534,7 +533,7 @@ const Members = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Member</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{memberToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete {memberToDelete?.name}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
