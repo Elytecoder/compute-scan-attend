@@ -1,4 +1,143 @@
-# Computing Society Attendance Monitoring System - API Documentation
+# Computing Society Attendance Monitoring System - Full Stack CRUD Application
+
+## Project Deliverables
+
+| Deliverable | Link |
+|-------------|------|
+| **Frontend (Deployed)** | https://83269c6e-c5ff-492f-8241-5f42c3f77cba.lovableproject.com |
+| **Backend API** | https://lojxwobotbkwwiccxnwk.supabase.co/rest/v1 |
+
+## Features Implemented
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| Navigation | 3+ UI sections (Dashboard, Members, Events, Scanner, Reports) | ✅ |
+| Display Data (GET) | Fetch and display members/events from backend | ✅ |
+| Create Record (POST) | Form submission to create members/events | ✅ |
+| Update Record (PATCH) | Editable forms to update records | ✅ |
+| Delete Record (DELETE) | Delete buttons for members/events | ✅ |
+| Validation | Zod schema validation on all forms | ✅ |
+| Deployment | Live frontend via Lovable | ✅ |
+| **BONUS: Authentication** | Email/password login with JWT | ✅ (+5) |
+| **BONUS: Pagination** | Members list pagination | ✅ (+5) |
+
+---
+
+## Frontend Code Screenshots - Using fetch() for CRUD Operations
+
+### API Configuration (src/api/config.ts)
+```typescript
+// Base URL for the REST API
+export const API_BASE_URL = 'https://lojxwobotbkwwiccxnwk.supabase.co/rest/v1';
+
+// API Key for authentication
+export const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+
+// Generate headers for API requests
+export const getHeaders = (): HeadersInit => {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    'apikey': API_KEY,
+    'Prefer': 'return=representation',
+  };
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+```
+
+### GET Request - Fetch Members (src/api/members.ts)
+```typescript
+export const getMembers = async (): Promise<Member[]> => {
+  // Using fetch() to make GET request to the REST API
+  const response = await fetch(
+    `${API_BASE_URL}/members?select=*&order=name.asc`,
+    {
+      method: 'GET',
+      headers: getHeaders(),
+    }
+  );
+  return handleResponse<Member[]>(response);
+};
+```
+
+### POST Request - Create Member (src/api/members.ts)
+```typescript
+export const createMember = async (member: MemberInput): Promise<Member[]> => {
+  // Using fetch() to make POST request to create a new member
+  const response = await fetch(
+    `${API_BASE_URL}/members`,
+    {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(member),
+    }
+  );
+  return handleResponse<Member[]>(response);
+};
+```
+
+### PATCH Request - Update Member (src/api/members.ts)
+```typescript
+export const updateMember = async (id: string, member: MemberInput): Promise<Member[]> => {
+  // Using fetch() to make PATCH request to update the member
+  const response = await fetch(
+    `${API_BASE_URL}/members?id=eq.${id}`,
+    {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(member),
+    }
+  );
+  return handleResponse<Member[]>(response);
+};
+```
+
+### DELETE Request - Delete Member (src/api/members.ts)
+```typescript
+export const deleteMember = async (id: string): Promise<void> => {
+  // Using fetch() to make DELETE request to remove the member
+  const response = await fetch(
+    `${API_BASE_URL}/members?id=eq.${id}`,
+    {
+      method: 'DELETE',
+      headers: getHeaders(),
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`HTTP Error: ${response.status}`);
+  }
+};
+```
+
+### Usage in React Component (src/pages/Members.tsx)
+```typescript
+import { getMembers, createMember, updateMember, deleteMember } from "@/api/members";
+
+// Fetch all members using GET request
+const fetchMembers = async () => {
+  const data = await getMembers(); // GET /members
+  setMembers(data);
+};
+
+// Create or update member
+const handleSubmit = async () => {
+  if (editingMember) {
+    await updateMember(editingMember.id, memberData); // PATCH /members?id=eq.{id}
+  } else {
+    await createMember(memberData); // POST /members
+  }
+};
+
+// Delete member
+const handleDelete = async () => {
+  await deleteMember(memberToDelete.id); // DELETE /members?id=eq.{id}
+};
+```
+
+---
 
 ## Base URL
 ```

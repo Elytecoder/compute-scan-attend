@@ -7,11 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Calendar as CalendarIcon, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
+
+// Import API service for HTTP requests using fetch()
+import { getEvents, createEvent, updateEvent, deleteEvent, Event, EventInput, EventUpdateInput } from "@/api/events";
 
 // Validation schema for events
 const eventSchema = z.object({
@@ -28,12 +30,12 @@ const eventSchema = z.object({
 
 const Events = () => {
   const { user } = useAuth();
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<any>(null);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [eventToDelete, setEventToDelete] = useState<any>(null);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -44,21 +46,26 @@ const Events = () => {
     fetchEvents();
   }, []);
 
+  /**
+   * Fetch all events using GET request
+   * Uses fetch() API to call: GET /events?select=*&order=event_date.desc
+   */
   const fetchEvents = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .order("event_date", { ascending: false });
-
-    if (error) {
+    try {
+      // GET request using fetch() - see src/api/events.ts
+      const data = await getEvents();
+      setEvents(data);
+    } catch (error) {
       toast.error("Failed to load events");
-    } else {
-      setEvents(data || []);
     }
     setLoading(false);
   };
 
+  /**
+   * Handle form submission for creating or updating an event
+   * Uses POST for create, PATCH for update
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -70,45 +77,39 @@ const Events = () => {
       return;
     }
 
-    if (editingEvent) {
-      const { error } = await supabase
-        .from("events")
-        .update({
+    try {
+      if (editingEvent) {
+        // PATCH request using fetch() - see src/api/events.ts
+        // Endpoint: PATCH /events?id=eq.{id}
+        const eventData: EventUpdateInput = {
           name: validation.data.name,
           description: validation.data.description,
           event_date: validation.data.event_date,
-        })
-        .eq("id", editingEvent.id);
-
-      if (error) {
-        toast.error("Failed to update event. Please try again.");
-      } else {
+        };
+        await updateEvent(editingEvent.id, eventData);
         toast.success("Event updated successfully");
-        setDialogOpen(false);
-        setEditingEvent(null);
-        setFormData({ name: "", description: "", event_date: "" });
-        fetchEvents();
-      }
-    } else {
-      const { error } = await supabase.from("events").insert({
-        name: validation.data.name,
-        description: validation.data.description,
-        event_date: validation.data.event_date,
-        created_by: user?.id,
-      });
-
-      if (error) {
-        toast.error("Failed to create event. Please try again.");
       } else {
+        // POST request using fetch() - see src/api/events.ts
+        // Endpoint: POST /events
+        const eventData: EventInput = {
+          name: validation.data.name,
+          description: validation.data.description,
+          event_date: validation.data.event_date,
+          created_by: user?.id,
+        };
+        await createEvent(eventData);
         toast.success("Event created successfully");
-        setDialogOpen(false);
-        setFormData({ name: "", description: "", event_date: "" });
-        fetchEvents();
       }
+      setDialogOpen(false);
+      setEditingEvent(null);
+      setFormData({ name: "", description: "", event_date: "" });
+      fetchEvents();
+    } catch (error) {
+      toast.error(editingEvent ? "Failed to update event. Please try again." : "Failed to create event. Please try again.");
     }
   };
 
-  const handleEdit = (event: any) => {
+  const handleEdit = (event: Event) => {
     setEditingEvent(event);
     setFormData({
       name: event.name,
@@ -118,25 +119,26 @@ const Events = () => {
     setDialogOpen(true);
   };
 
+  /**
+   * Delete an event using DELETE request
+   * Endpoint: DELETE /events?id=eq.{id}
+   */
   const handleDelete = async () => {
     if (!eventToDelete) return;
 
-    const { error } = await supabase
-      .from("events")
-      .delete()
-      .eq("id", eventToDelete.id);
-
-    if (error) {
-      toast.error("Failed to delete event. Please try again.");
-    } else {
+    try {
+      // DELETE request using fetch() - see src/api/events.ts
+      await deleteEvent(eventToDelete.id);
       toast.success("Event deleted successfully");
       setDeleteDialogOpen(false);
       setEventToDelete(null);
       fetchEvents();
+    } catch (error) {
+      toast.error("Failed to delete event. Please try again.");
     }
   };
 
-  const openDeleteDialog = (event: any) => {
+  const openDeleteDialog = (event: Event) => {
     setEventToDelete(event);
     setDeleteDialogOpen(true);
   };
@@ -242,7 +244,7 @@ const Events = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(event.created_at).toLocaleDateString()}
+                      {event.created_at ? new Date(event.created_at).toLocaleDateString() : "-"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
