@@ -1,80 +1,198 @@
-import { useState, useEffect } from "react";
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from "html5-qrcode";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CameraDevice,
+  Html5Qrcode,
+  Html5QrcodeSupportedFormats,
+} from "html5-qrcode";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, RefreshCw, XCircle } from "lucide-react";
 import { z } from "zod";
 
-// Validation schema for school ID - accepts both QR format (0000-00000) and Code 39 barcode format (alphanumeric)
-const schoolIdSchema = z.string()
+// Validation schema for school ID - accepts both QR format and barcode format (alphanumeric)
+const schoolIdSchema = z
+  .string()
   .trim()
   .min(1, "School ID cannot be empty")
   .max(20, "School ID is too long");
 
+const SUPPORTED_FORMATS: Html5QrcodeSupportedFormats[] = [
+  Html5QrcodeSupportedFormats.QR_CODE,
+  Html5QrcodeSupportedFormats.CODE_39,
+  // Common 1D barcode types (in case cards are not Code 39)
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.ITF,
+];
+
 const Scanner = () => {
-  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+  const qrRef = useRef<Html5Qrcode | null>(null);
+  const processingRef = useRef(false);
+
   const [scanning, setScanning] = useState(false);
+  const [starting, setStarting] = useState(false);
+
   const [selectedEvent, setSelectedEvent] = useState<string>("");
-  const [selectedSession, setSelectedSession] = useState<"morning" | "afternoon">("morning");
+  const [selectedSession, setSelectedSession] = useState<"morning" | "afternoon">(
+    "morning"
+  );
   const [actionType, setActionType] = useState<"time_in" | "time_out">("time_in");
   const [events, setEvents] = useState<any[]>([]);
+
+  const [cameras, setCameras] = useState<CameraDevice[]>([]);
+  const [activeCameraIndex, setActiveCameraIndex] = useState(0);
+
   const [lastScan, setLastScan] = useState<{
     success: boolean;
     message: string;
   } | null>(null);
 
+  const activeCamera = useMemo(() => {
+    if (!cameras.length) return null;
+    return cameras[Math.min(activeCameraIndex, cameras.length - 1)] ?? null;
+  }, [cameras, activeCameraIndex]);
+
   useEffect(() => {
     fetchEvents();
   }, []);
 
+  // Start (or restart) the camera stream when scanning is enabled or when camera changes.
   useEffect(() => {
-    if (scanning && !scanner) {
-      // Wait for DOM to update before initializing scanner
-      const timer = setTimeout(() => {
-        const html5QrcodeScanner = new Html5QrcodeScanner(
-          "reader",
-          { 
-            fps: 10,
-            qrbox: function(viewfinderWidth: number, viewfinderHeight: number) {
-              // Make the scanning box 80% of the viewport for better long-distance scanning
-              const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-              const qrboxSize = Math.floor(minEdgeSize * 0.8);
-              return {
-                width: qrboxSize,
-                height: qrboxSize
-              };
-            },
-            formatsToSupport: [
-              Html5QrcodeSupportedFormats.QR_CODE,
-              Html5QrcodeSupportedFormats.CODE_39
-            ],
-            experimentalFeatures: {
-              useBarCodeDetectorIfSupported: true
-            },
-            rememberLastUsedCamera: true,
-            aspectRatio: 1.0
-          },
-          false
-        );
+    if (!scanning) return;
 
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        setScanner(html5QrcodeScanner);
-      }, 100);
+    let cancelled = false;
 
-      return () => clearTimeout(timer);
-    }
-  }, [scanning, scanner]);
+    const ensureCameraList = async () => {
+      if (cameras.length) return;
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (cancelled) return;
 
-  useEffect(() => {
-    return () => {
-      if (scanner) {
-        scanner.clear();
+        if (!devices.length) {
+          toast.error("No camera detected on this device");
+          setScanning(false);
+          return;
+        }
+
+        setCameras(devices);
+        // Prefer the last camera (often the rear/environment camera on phones)
+        setActiveCameraIndex(devices.length > 1 ? devices.length - 1 : 0);
+      } catch (err) {
+        console.error("Failed to list cameras", err);
+        toast.error("Unable to access cameras. Please allow camera permission.");
+        setScanning(false);
       }
     };
-  }, [scanner]);
+
+    const startWithActiveCamera = async () => {
+      // Wait until cameras are loaded
+      if (!activeCamera) return;
+
+      setStarting(true);
+      try {
+        if (!qrRef.current) {
+          qrRef.current = new Html5Qrcode("reader", {
+            verbose: false,
+            formatsToSupport: SUPPORTED_FORMATS,
+            useBarCodeDetectorIfSupported: true,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true,
+            },
+          });
+        }
+
+        const qr = qrRef.current;
+
+        if (qr.isScanning) {
+          await qr.stop().catch(() => {
+            // ignore stop errors during quick restarts
+          });
+        }
+
+        qr.clear();
+
+        await qr.start(
+          activeCamera.id,
+          {
+            fps: 12,
+            // A rectangular scan zone tends to work better for 1D barcodes,
+            // while still being usable for QR codes.
+            qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+              const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+              const width = Math.floor(minEdgeSize * 0.9);
+              const height = Math.floor(minEdgeSize * 0.45);
+              return { width, height };
+            },
+          },
+          (decodedText) => {
+            void onScanSuccess(decodedText);
+          },
+          () => {
+            // Ignore scan failures - they happen constantly as the scanner tries to read
+          }
+        );
+      } catch (err: any) {
+        console.error("Failed to start scanner", err);
+        toast.error(
+          err?.name === "NotAllowedError"
+            ? "Camera permission denied. Please allow camera access and try again."
+            : "Camera failed to start. Please try again."
+        );
+        setScanning(false);
+      } finally {
+        setStarting(false);
+      }
+    };
+
+    // Defer until the reader div is in the DOM.
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        await ensureCameraList();
+        if (cancelled) return;
+        await startWithActiveCamera();
+      })();
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [scanning, activeCamera, cameras.length]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      const qr = qrRef.current;
+      if (!qr) return;
+      qr.stop()
+        .catch(() => undefined)
+        .finally(() => {
+          try {
+            qr.clear();
+          } catch {
+            // ignore
+          }
+        });
+    };
+  }, []);
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -102,176 +220,192 @@ const Scanner = () => {
       toast.error("Please select an action type first");
       return;
     }
+
+    setLastScan(null);
     setScanning(true);
   };
 
-  const stopScanning = () => {
-    if (scanner) {
-      scanner.clear();
-      setScanner(null);
+  const stopScanning = async () => {
+    const qr = qrRef.current;
+
+    try {
+      if (qr?.isScanning) {
+        await qr.stop();
+      }
+      qr?.clear();
+    } catch (err) {
+      console.error("Failed to stop scanner", err);
+    } finally {
       setScanning(false);
     }
+  };
+
+  const switchCamera = () => {
+    if (cameras.length <= 1) return;
+    setActiveCameraIndex((idx) => (idx + 1) % cameras.length);
   };
 
   const playBeep = () => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
+
     oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    
+    oscillator.type = "sine";
+
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-    
+
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.2);
   };
 
   const onScanSuccess = async (decodedText: string) => {
-    console.log("Scanned value:", decodedText);
-    
-    // Validate and sanitize school ID
-    const validation = schoolIdSchema.safeParse(decodedText);
-    console.log("Validation result:", validation);
-    
-    if (!validation.success) {
-      console.log("Validation failed:", validation.error);
-      setLastScan({
-        success: false,
-        message: `Invalid barcode format: ${decodedText}`,
-      });
-      toast.error("Invalid barcode format. Please scan a valid membership card.");
-      return;
-    }
-    
-    const schoolId = validation.data;
-    console.log("Validated school ID:", schoolId);
-    
-    // Find member by school ID
-    const { data: member, error: memberError } = await supabase
-      .from("members")
-      .select("*")
-      .eq("school_id", schoolId)
-      .maybeSingle();
+    if (processingRef.current) return;
+    processingRef.current = true;
 
-    console.log("Member query result:", { member, memberError });
+    try {
+      console.log("Scanned value:", decodedText);
 
-    if (memberError || !member) {
-      setLastScan({
-        success: false,
-        message: `Member not found: ${schoolId}`,
-      });
-      toast.error("Member not found in the system");
-      return;
-    }
-
-    if (actionType === "time_in") {
-      // Check if already has a time in for this session
-      const { data: existingTimeIn } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("event_id", selectedEvent)
-        .eq("member_id", member.id)
-        .eq("session", selectedSession)
-        .maybeSingle();
-
-      if (existingTimeIn) {
+      const validation = schoolIdSchema.safeParse(decodedText);
+      if (!validation.success) {
         setLastScan({
           success: false,
-          message: `${member.name} - Already has time in for ${selectedSession} session`,
+          message: `Invalid barcode format: ${decodedText}`,
         });
-        toast.error(`${member.name} already has a time in record for the ${selectedSession} session`);
+        toast.error("Invalid barcode format. Please scan a valid membership card.");
         return;
       }
 
-      // Record time in
-      const { error: insertError } = await supabase
-        .from("attendance")
-        .insert({
+      const schoolId = validation.data;
+
+      const { data: member, error: memberError } = await supabase
+        .from("members")
+        .select("*")
+        .eq("school_id", schoolId)
+        .maybeSingle();
+
+      if (memberError || !member) {
+        setLastScan({
+          success: false,
+          message: `Member not found: ${schoolId}`,
+        });
+        toast.error("Member not found in the system");
+        return;
+      }
+
+      if (actionType === "time_in") {
+        const { data: existingTimeIn } = await supabase
+          .from("attendance")
+          .select("*")
+          .eq("event_id", selectedEvent)
+          .eq("member_id", member.id)
+          .eq("session", selectedSession)
+          .maybeSingle();
+
+        if (existingTimeIn) {
+          setLastScan({
+            success: false,
+            message: `${member.name} - Already has time in for ${selectedSession} session`,
+          });
+          toast.error(
+            `${member.name} already has a time in record for the ${selectedSession} session`
+          );
+          return;
+        }
+
+        const { error: insertError } = await supabase.from("attendance").insert({
           event_id: selectedEvent,
           member_id: member.id,
           session: selectedSession,
           time_in: new Date().toISOString(),
         });
 
-      if (insertError) {
-        toast.error("Failed to record time in. Please try again.");
-        return;
-      }
+        if (insertError) {
+          toast.error("Failed to record time in. Please try again.");
+          return;
+        }
 
-      playBeep();
-      setLastScan({
-        success: true,
-        message: `${member.name} - TIMED IN (${selectedSession.toUpperCase()})\n${member.program} ${member.block}`,
-      });
-      toast.success(`${member.name} timed in successfully for ${selectedSession}`);
-    } else {
-      // Time out - find existing time in record without time out
-      const { data: existingAttendance } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("event_id", selectedEvent)
-        .eq("member_id", member.id)
-        .eq("session", selectedSession)
-        .maybeSingle();
-
-      if (!existingAttendance) {
+        playBeep();
         setLastScan({
-          success: false,
-          message: `${member.name} - No time in record found for ${selectedSession} session`,
+          success: true,
+          message: `${member.name} - TIMED IN (${selectedSession.toUpperCase()})\n${member.program} ${member.block}`,
         });
-        toast.error(`${member.name} has no time in record for the ${selectedSession} session`);
-        return;
-      }
+        toast.success(`${member.name} timed in successfully for ${selectedSession}`);
+      } else {
+        const { data: existingAttendance } = await supabase
+          .from("attendance")
+          .select("*")
+          .eq("event_id", selectedEvent)
+          .eq("member_id", member.id)
+          .eq("session", selectedSession)
+          .maybeSingle();
 
-      if (existingAttendance.time_out) {
+        if (!existingAttendance) {
+          setLastScan({
+            success: false,
+            message: `${member.name} - No time in record found for ${selectedSession} session`,
+          });
+          toast.error(
+            `${member.name} has no time in record for the ${selectedSession} session`
+          );
+          return;
+        }
+
+        if (existingAttendance.time_out) {
+          setLastScan({
+            success: false,
+            message: `${member.name} - Already timed out for ${selectedSession} session`,
+          });
+          toast.error(
+            `${member.name} already has a time out record for the ${selectedSession} session`
+          );
+          return;
+        }
+
+        const { error: updateError } = await supabase
+          .from("attendance")
+          .update({ time_out: new Date().toISOString() })
+          .eq("id", existingAttendance.id);
+
+        if (updateError) {
+          toast.error("Failed to record time out. Please try again.");
+          return;
+        }
+
+        playBeep();
         setLastScan({
-          success: false,
-          message: `${member.name} - Already timed out for ${selectedSession} session`,
+          success: true,
+          message: `${member.name} - TIMED OUT (${selectedSession.toUpperCase()})`,
         });
-        toast.error(`${member.name} already has a time out record for the ${selectedSession} session`);
-        return;
+        toast.success(`${member.name} timed out successfully for ${selectedSession}`);
       }
-
-      // Record time out
-      const { error: updateError } = await supabase
-        .from("attendance")
-        .update({ time_out: new Date().toISOString() })
-        .eq("id", existingAttendance.id);
-
-      if (updateError) {
-        toast.error("Failed to record time out. Please try again.");
-        return;
-      }
-
-      playBeep();
-      setLastScan({
-        success: true,
-        message: `${member.name} - TIMED OUT (${selectedSession.toUpperCase()})`,
-      });
-      toast.success(`${member.name} timed out successfully for ${selectedSession}`);
+    } finally {
+      // Small cooldown to avoid multiple rapid triggers on the same code.
+      window.setTimeout(() => {
+        processingRef.current = false;
+      }, 900);
     }
-  };
-
-  const onScanFailure = (error: any) => {
-    // Ignore scan failures - they happen constantly as the scanner tries to read
   };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Scan Attendance</h1>
-        <p className="text-muted-foreground">Scan membership cards to record attendance</p>
+        <p className="text-muted-foreground">
+          Scan membership cards to record attendance
+        </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Select Event, Session & Action</CardTitle>
-          <CardDescription>Choose the event, session, and whether to record time in or time out</CardDescription>
+          <CardDescription>
+            Choose the event, session, and whether to record time in or time out
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -292,7 +426,11 @@ const Scanner = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Session</label>
-            <Select value={selectedSession} onValueChange={(value: "morning" | "afternoon") => setSelectedSession(value)} disabled={scanning}>
+            <Select
+              value={selectedSession}
+              onValueChange={(value: "morning" | "afternoon") => setSelectedSession(value)}
+              disabled={scanning}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a session" />
               </SelectTrigger>
@@ -305,7 +443,11 @@ const Scanner = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Action Type</label>
-            <Select value={actionType} onValueChange={(value: "time_in" | "time_out") => setActionType(value)} disabled={scanning}>
+            <Select
+              value={actionType}
+              onValueChange={(value: "time_in" | "time_out") => setActionType(value)}
+              disabled={scanning}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select action type" />
               </SelectTrigger>
@@ -317,11 +459,15 @@ const Scanner = () => {
           </div>
 
           {!scanning ? (
-            <Button onClick={startScanning} className="w-full" disabled={!selectedEvent || !selectedSession || !actionType}>
+            <Button
+              onClick={startScanning}
+              className="w-full"
+              disabled={!selectedEvent || !selectedSession || !actionType}
+            >
               Start Scanning
             </Button>
           ) : (
-            <Button onClick={stopScanning} variant="destructive" className="w-full">
+            <Button onClick={() => void stopScanning()} variant="destructive" className="w-full">
               Stop Scanning
             </Button>
           )}
@@ -349,10 +495,27 @@ const Scanner = () => {
         <Card>
           <CardHeader>
             <CardTitle>Scanner</CardTitle>
-            <CardDescription>Position the barcode within the frame</CardDescription>
+            <CardDescription>
+              Position the barcode within the frame{activeCamera?.label ? ` • ${activeCamera.label}` : ""}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div id="reader" className="w-full"></div>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={switchCamera}
+                disabled={starting || cameras.length <= 1}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Switch Camera
+              </Button>
+              {starting && (
+                <p className="text-sm text-muted-foreground">Starting camera…</p>
+              )}
+            </div>
+
+            <div id="reader" className="w-full" />
           </CardContent>
         </Card>
       )}
